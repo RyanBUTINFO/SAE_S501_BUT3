@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'video_page.dart'; // Ajoute cet import
 
 class TutorialPage extends StatelessWidget {
   const TutorialPage({super.key});
@@ -74,7 +75,10 @@ class TutorialPage extends StatelessWidget {
                     const SizedBox(height: 15),
                     ElevatedButton.icon(
                       onPressed: () {
-                        // Ajoute la logique d'ouverture de la vidéo si besoin
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const VideoPage()),
+                        );
                       },
                       icon: const Icon(Icons.play_arrow),
                       label: const Text('Voir le tutoriel'),
@@ -92,7 +96,7 @@ class TutorialPage extends StatelessWidget {
               const SizedBox(height: 40),
               OutlinedButton(
                 onPressed: () {
-                  // Ajoute la logique pour aller à la page suivante
+                  // Ajoute la logique pour aller à la page suivante si besoin.
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF6B8E23)),
