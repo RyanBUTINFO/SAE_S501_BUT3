@@ -39,6 +39,9 @@ dependencies:
   # SQLite packages
   sqflite: ^2.3.0
   path: ^1.8.3
+  # Base de données compatible web
+  sembast: ^3.2.0
+  sembast_web: ^2.4.2
 
 dev_dependencies:
   flutter_test:
