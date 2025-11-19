@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'pages/splash_screen.dart';
-import 'pages/tutorial_page.dart';
-import 'database/scripts/database_helper.dart';
+import 'Views/splash_screen.dart';
+import 'Views/tutorial_page.dart';
+import 'Models/database/scripts/database_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 
