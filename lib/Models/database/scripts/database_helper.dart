@@ -34,20 +34,26 @@ class DatabaseHelper {
               id INTEGER PRIMARY KEY,
               nom TEXT NOT NULL,
               type TEXT,
+              cuisine TEXT,
               origine TEXT,
+              temps_preparation REAL,
+              temps_cuisson REAL,
               nb_personnes INTEGER,
+              nombre_etapes INTEGER,
               instructions TEXT,
+              methodes_cuisson TEXT,
               ustensiles TEXT,
-              empreinte_carbone REAL,
-              image_path TEXT
+              image_path TEXT,
+              calories TEXT,
+              valeur_nutritionnelle TEXT,
+              empreinte_carbone REAL
             );
           ''');
 
           await db.execute('''
             CREATE TABLE ingredients (
               id INTEGER PRIMARY KEY,
-              nom TEXT NOT NULL,
-              type TEXT
+              nom TEXT NOT NULL UNIQUE
             );
           ''');
 
