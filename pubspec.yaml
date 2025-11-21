@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  csv: ^5.1.0 
   
   video_player: ^2.7.2
 
@@ -71,7 +72,9 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/images/logo.png
-    - assets/Csv_database/
+    - assets/Csv_database/plats.csv
+    - assets/Csv_database/ingredients.csv
+    - assets/Csv_database/plat_ingredient.csv    
     - assets/images_plats/
 
   # An image asset can refer to one or more resolution-specific "variants", see
