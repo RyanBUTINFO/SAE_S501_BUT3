@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'Views/splash_screen.dart';
 import 'Views/tutorial_page.dart';
 import 'Views/home_page.dart';
-import 'Views/infos_plat.dart'; 
+import 'Views/infos_plat.dart';
 import 'database/database_helper.dart';
 import 'repositories/plat_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -24,9 +24,9 @@ void main() async {
     print("Base web prête (Sembast)");
   }
 
-  // ------------------ Tests équipe  backend en console ------------------
+  // ------------------ Tests équipe backend en console ------------------
   print('-------------------------------------------------');
-  print("\n\n\n  Tests effetués par l'équipe de backend :  ");
+  print("\n\n\n  Tests effectués par l'équipe backend :  ");
 
   final platRepo = PlatRepository();
   final allPlats = await platRepo.getTopPlatsByOrigine('America', limit: 10);
@@ -36,8 +36,6 @@ void main() async {
   for (var plat in allPlats) {
     print('${plat.id} - ${plat.nom} (Origine: ${plat.origine})');
   }
-
-  //Suite de tests ...
 
   print("\n Fin Tests de l'équipe du backend \n");
   print('-------------------------------------------------');
@@ -55,18 +53,15 @@ class MiaamApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Miaam',
       theme: ThemeData(
-        // Le thème principal de l'application (vert kaki)
-        primaryColor: const Color(0xFF6B8E23), 
+        primaryColor: const Color(0xFF6B8E23),  // Vert kaki
         fontFamily: 'Arial',
       ),
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/tutorial': (context) => const TutorialPage(),
-        // Route pour la page des infos du plat
-        '/infos_plat': (context) => const RecipePage(),
-      }, 
         '/home': (context) => const HomePage(),
+        '/infos_plat': (context) => const RecipePage(),  // Page infos d’un plat
       },
     );
   }
