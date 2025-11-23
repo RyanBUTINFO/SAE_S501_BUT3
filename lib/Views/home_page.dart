@@ -9,11 +9,34 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int currentIndex = 0;
+  final PageController _pageController = PageController();
+
+  final List<Map<String, String>> recettesDuJour = [
+    {
+      'image': 'assets/images/choco_cake.jpg',
+      'title': 'Cake au chocolat et amandes en poudre',
+      'level': 'Moyen',
+      'badge': 'Recette du jour',
+    },
+    {
+      'image': 'assets/images/cupcake.jpg',
+      'title': 'Cupcake festif',
+      'level': 'Facile',
+      'badge': 'Recette du jour',
+    },
+    {
+      'image': 'assets/images/plat_vegetarien.jpg',
+      'title': 'Plat végétarien du chef',
+      'level': 'Moyen',
+      'badge': 'Recette du jour',
+    },
+    // Ajoute plus de recettes si besoin
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFF6F8F4), // Gris doux pour le fond
+      backgroundColor: Color(0xFFF6F8F4),
       appBar: PreferredSize(
         preferredSize: Size.fromHeight(60),
         child: SafeArea(
@@ -42,7 +65,6 @@ class _HomePageState extends State<HomePage> {
       ),
       body: Column(
         children: [
-          // Boutons switch
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
             child: Container(
@@ -88,24 +110,50 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
-          // Carrousel Recette du jour
-          Container(
-            height: 180,
-            margin: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
-            child: PageView(
-              physics: BouncingScrollPhysics(),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                recipeCard(
-                  image: 'assets/images/choco_cake.jpg',
-                  title: 'Cake au chocolat et amandes en poudre',
-                  level: 'Moyen',
-                  badge: 'Recette du jour',
+                SizedBox(
+                  height: 180,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: recettesDuJour.length,
+                    itemBuilder: (context, index) {
+                      final r = recettesDuJour[index];
+                      return recipeCard(
+                        image: r['image']!,
+                        title: r['title']!,
+                        level: r['level']!,
+                        badge: r['badge'],
+                      );
+                    },
+                  ),
                 ),
-                // Ajoute d’autres recettes ici si besoin
+                Positioned(
+                  left: -5,
+                  child: IconButton(
+                    icon: Icon(Icons.chevron_left, size: 39, color: Color(0xFF6B8E23)),
+                    onPressed: () {
+                      _pageController.previousPage(
+                        duration: Duration(milliseconds: 500), curve: Curves.ease);
+                    },
+                  ),
+                ),
+                Positioned(
+                  right: -5,
+                  child: IconButton(
+                    icon: Icon(Icons.chevron_right, size: 39, color: Color(0xFF6B8E23)),
+                    onPressed: () {
+                      _pageController.nextPage(
+                        duration: Duration(milliseconds: 500), curve: Curves.ease);
+                    },
+                  ),
+                ),
               ],
             ),
           ),
-          // Top recettes
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
             child: Align(
@@ -166,13 +214,26 @@ class _HomePageState extends State<HomePage> {
 
   Widget recipeCard({required String image, required String title, required String level, String? badge}) {
     return Container(
+      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Color(0xFF6B8E23), width: 3),
         image: DecorationImage(
           image: AssetImage(image),
           fit: BoxFit.cover,
         ),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 8)],
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFF6B8E23).withOpacity(0.15),
+            blurRadius: 14,
+            offset: Offset(0, 5),
+          ),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 7,
+            offset: Offset(0, 1.5),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -226,12 +287,13 @@ class _HomePageState extends State<HomePage> {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: Color(0xFF6B8E23), width: 2),
         image: DecorationImage(
           image: AssetImage(image),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(Colors.white.withOpacity(0.65), BlendMode.dstATop),
         ),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+        boxShadow: [BoxShadow(color: Color(0xFF6B8E23).withOpacity(0.10), blurRadius: 10)],
       ),
       child: Stack(
         children: [
