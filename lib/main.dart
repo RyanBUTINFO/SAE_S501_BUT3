@@ -4,7 +4,8 @@ import 'Views/tutorial_page.dart';
 import 'Models/database/scripts/database_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'Views/home_page.dart';
-
+// J'ai renommé le fichier de destination en 'infos_plat.dart' et la classe en 'RecipePage'
+import 'Views/infos_plat.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,14 +34,17 @@ class MiaamApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Miaam',
       theme: ThemeData(
-        primaryColor: const Color(0xFF6B8E23), // Vert kaki
+        // Le thème principal de l'application (vert kaki)
+        primaryColor: const Color(0xFF6B8E23), 
         fontFamily: 'Arial',
       ),
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/tutorial': (context) => const TutorialPage(),
-      },
+        // 👈 Votre nouvelle page de recette est ajoutée ici
+        '/infos_plat': (context) => const RecipePage(),
+      }, 
     );
   }
 }
