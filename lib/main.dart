@@ -3,6 +3,7 @@ import 'Views/splash_screen.dart';
 import 'Views/tutorial_page.dart';
 import 'Models/database/scripts/database_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'Views/home_page.dart';
 
 
 void main() async {
