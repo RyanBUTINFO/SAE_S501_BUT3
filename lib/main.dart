@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'Views/splash_screen.dart';
 import 'Views/tutorial_page.dart';
 import 'Views/home_page.dart';
+import 'Views/infos_plat.dart'; 
 import 'database/database_helper.dart';
 import 'repositories/plat_repository.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -54,13 +55,17 @@ class MiaamApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Miaam',
       theme: ThemeData(
-        primaryColor: const Color(0xFF6B8E23), // Vert kaki
+        // Le thème principal de l'application (vert kaki)
+        primaryColor: const Color(0xFF6B8E23), 
         fontFamily: 'Arial',
       ),
       initialRoute: '/',
       routes: {
         '/': (context) => const SplashScreen(),
         '/tutorial': (context) => const TutorialPage(),
+        // Route pour la page des infos du plat
+        '/infos_plat': (context) => const RecipePage(),
+      }, 
         '/home': (context) => const HomePage(),
       },
     );
