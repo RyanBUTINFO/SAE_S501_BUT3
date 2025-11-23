@@ -105,10 +105,13 @@ class RecipePage extends StatelessWidget {
         icon: const Icon(Icons.close, color: Colors.black),
         onPressed: () {},
       ),
-      actions: const [
-        Padding(
-          padding: EdgeInsets.only(right: 8.0),
-          child: Icon(Icons.favorite_border, color: Colors.black),
+      actions: [ // Retrait de 'const' pour permettre l'utilisation de Tooltip
+        Tooltip(
+          message: 'Ajouter aux favoris', // Texte affiché au survol/appui long
+          child: Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: const Icon(Icons.favorite_border, color: Colors.black),
+          ),
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
