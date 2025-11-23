@@ -4,7 +4,6 @@ import 'Views/tutorial_page.dart';
 import 'Models/database/scripts/database_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'Views/home_page.dart';
-// J'ai renommé le fichier de destination en 'infos_plat.dart' et la classe en 'RecipePage'
 import 'Views/infos_plat.dart'; 
 
 void main() async {
@@ -42,7 +41,7 @@ class MiaamApp extends StatelessWidget {
       routes: {
         '/': (context) => const SplashScreen(),
         '/tutorial': (context) => const TutorialPage(),
-        // 👈 Votre nouvelle page de recette est ajoutée ici
+        // Route pour la page des infos du plat
         '/infos_plat': (context) => const RecipePage(),
       }, 
     );
