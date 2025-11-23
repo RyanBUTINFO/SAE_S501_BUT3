@@ -2,11 +2,12 @@ import 'package:flutter/material.dart';
 
 // --- Définitions des Couleurs et Données (Rendus accessibles globalement) ---
 
-// Couleurs dérivées des images fournies
-const Color _kPrimaryColor = Color(0xFFF09855); // Jaune/Orange de la bannière
+// Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info
+const Color _kAppPrimaryColor = Color(0xFF6B8E23); 
+// Jaune/Orange de la bannière 
+const Color _kBannerColor = Color(0xFFF09855); 
 const Color _kAccentColor = Color(0xFFEA4C46); // Rouge des boutons et étoiles
 const Color _kBackgroundColor = Color(0xFFFAF6F0); // Couleur de fond très claire
-const Color _kNoteColor = Color(0xFFFDECD9); // Fond de la section "Notes perso"
 
 // Liste des ingrédients (pour la GridView)
 final List<Map<String, dynamic>> _ingredients = const [
@@ -53,6 +54,7 @@ class RecipePage extends StatelessWidget {
                 _buildIntroSection(context),
                 const SizedBox(height: 20),
 
+                // Section Info (Préparation/Cuisson/Calories) - En vert kaki
                 _buildInfoSection(context),
                 const SizedBox(height: 20),
 
@@ -74,9 +76,6 @@ class RecipePage extends StatelessWidget {
                 _buildStepsSection(),
                 const SizedBox(height: 20),
 
-                _buildNotesSection(context),
-                const SizedBox(height: 20),
-
                 // Sections repliables
                 _buildExpandableSection(context, 'Valeurs nutritionnelles', 'Voir les informations nutritionnelles', null),
                 const Divider(height: 0),
@@ -91,7 +90,7 @@ class RecipePage extends StatelessWidget {
           ),
         ],
       ),
-      // Bouton flottant du bas
+      // Bouton fixe en bas de page
       bottomSheet: _buildBottomSheet(context),
     );
   }
@@ -99,7 +98,7 @@ class RecipePage extends StatelessWidget {
   // En-tête de la page (SliverAppBar)
   Widget _buildSliverAppBar() {
     return SliverAppBar(
-      backgroundColor: _kPrimaryColor, // La couleur de fond derrière l'image si elle ne couvre pas tout
+      backgroundColor: _kBannerColor, // Couleur de la bannière (Jaune/Orange)
       expandedHeight: 400.0,
       pinned: true,
       leading: IconButton(
@@ -129,19 +128,6 @@ class RecipePage extends StatelessWidget {
                       fit: BoxFit.cover, // S'assure que l'image couvre tout l'espace disponible
                     ),
                   ),
-                  // Bannière rayée jaune/orange (si vous voulez la superposer)
-                  // Si l'image contient déjà la bannière, retirez ceci.
-                  // Si la bannière doit être au-dessus, elle irait ici.
-                  // Exemple pour la bannière par-dessus l'image:
-                  // Positioned(
-                  //   top: 0,
-                  //   left: 0,
-                  //   right: 0,
-                  //   height: 100, // Hauteur de la bannière
-                  //   child: Container(
-                  //     color: _kPrimaryColor.withOpacity(0.5), // Ou une image de bannière
-                  //   ),
-                  // ),
                 ],
               ),
             ),
@@ -191,11 +177,7 @@ class RecipePage extends StatelessWidget {
             children: [
               const _ScorePill(text1: '€€€', text2: 'Prix', icon: null),
               const _ScorePill(text1: 'Très facile', text2: '', icon: Icons.bar_chart),
-              // Simuler les scores (Utiliser Image.asset si dispo)
-              // Assurez-vous d'avoir ces assets si vous les décommentez
-              // Image.asset('assets/nutriscore_placeholder.png', height: 30),
-              // Image.asset('assets/eco_score_placeholder.png', height: 30),
-              // Placeholders temporaires
+              // Placeholders temporaires pour les scores
               Container(width: 50, height: 30, color: Colors.green.shade200, child: const Center(child: Text('Nutri', style: TextStyle(fontSize: 10)))),
               Container(width: 50, height: 30, color: Colors.yellow.shade200, child: const Center(child: Text('Eco', style: TextStyle(fontSize: 10)))),
             ],
@@ -220,15 +202,16 @@ class RecipePage extends StatelessWidget {
     );
   }
 
-  // Section Préparation/Cuisson/Calories
+  // Section Préparation/Cuisson/Calories - En Vert Kaki
   Widget _buildInfoSection(BuildContext context) {
     return Container(
-      color: _kPrimaryColor.withOpacity(0.9),
+      color: _kAppPrimaryColor.withOpacity(0.9), // Vert Kaki
       padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _TimePill(icon: Icons.edit, time: '5 minutes', label: 'Préparation'),
+          // Icône changée en couteau/couverts (Icons.restaurant)
+          _TimePill(icon: Icons.restaurant, time: '5 minutes', label: 'Préparation'),
           _TimePill(icon: Icons.timer, time: '12 minutes', label: 'Cuisson'),
           _TimePill(icon: Icons.local_fire_department, time: '751 kcal', label: 'Par portion'),
         ],
@@ -344,58 +327,6 @@ class RecipePage extends StatelessWidget {
     );
   }
 
-  // Section Notes Perso
-  Widget _buildNotesSection(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0),
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: _kNoteColor,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Notes perso',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 4),
-          const Text('Votre grain de sel dans la recette !'),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text('Touchez pour ajouter une note privée', style: TextStyle(color: Colors.grey)),
-                Icon(Icons.edit, color: Colors.grey.shade600),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Barre de notation (simulée)
-          Row(
-            children: List.generate(8, (i) {
-              return Expanded(
-                child: Container(
-                  height: 15,
-                  margin: const EdgeInsets.only(right: 4),
-                  color: i % 2 == 0 ? Colors.red : Colors.orange,
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Section repliable générique
   Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget) {
     return ExpansionTile(
@@ -419,7 +350,7 @@ class RecipePage extends StatelessWidget {
     );
   }
 
-  // Bouton fixe en bas de page
+  // Bouton fixe en bas de page (seulement le message de partage)
   Widget _buildBottomSheet(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16.0),
@@ -433,14 +364,11 @@ class RecipePage extends StatelessWidget {
           ),
         ],
       ),
-      child: const SafeArea( // Utilisation de const car le contenu est maintenant statique
+      child: const SafeArea( 
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Le bouton 'Retirer du menu' a été supprimé ici
-            
-            // Le message de partage est conservé
             Text(
               'Vous avez réalisé cette recette ? Partagez votre œuvre sur Insta',
               textAlign: TextAlign.center,
