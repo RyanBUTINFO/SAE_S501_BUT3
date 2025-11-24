@@ -67,11 +67,14 @@ class RecipePage extends StatelessWidget {
                 _buildInfoSection(context),
                 const SizedBox(height: 20),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Ingrédients',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                // Titre Ingrédients centré
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'Ingrédients',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -79,8 +82,19 @@ class RecipePage extends StatelessWidget {
                 _buildIngredientsSection(),
                 const SizedBox(height: 20),
 
-                _buildEnsureSection(context),
-                const SizedBox(height: 20),
+                // NOTE: _buildEnsureSection a été supprimé
+
+                // Titre Recette centré
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'Recette',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 _buildStepsSection(),
                 const SizedBox(height: 20),
@@ -294,8 +308,7 @@ class RecipePage extends StatelessWidget {
                     Icon(Icons.people_alt, size: 18),
                     SizedBox(width: 5),
                     Text('1', style: TextStyle(fontWeight: FontWeight.bold)),
-                    SizedBox(width: 5),
-                    Icon(Icons.arrow_drop_down, size: 18),
+                    // La flèche déroulante a été supprimée ici
                   ],
                 ),
               ),
@@ -324,57 +337,26 @@ class RecipePage extends StatelessWidget {
     );
   }
 
-  // Section "Assurez-vous d'avoir..."
-  Widget _buildEnsureSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Assurez-vous d\'avoir...',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Text('Huile d\'olive (1 càc)', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 5),
-              Icon(Icons.info_outline, size: 16, color: Theme.of(context).primaryColor),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // NOTE: La méthode _buildEnsureSection a été supprimée comme demandé.
 
   // Section des étapes de la recette (ListView)
   Widget _buildStepsSection() {
+    // Retrait de l'ancien titre ici, il est géré dans le SliverList pour le centrage
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recette',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 10),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _steps.length,
-            itemBuilder: (context, index) {
-              final iconData = index < _ingredients.length ? _ingredients[index]['icon'] : null;
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _steps.length,
+        itemBuilder: (context, index) {
+          final iconData = index < _ingredients.length ? _ingredients[index]['icon'] : null;
 
-              return _RecipeStep(
-                stepNumber: index + 1,
-                text: _steps[index],
-                icon: iconData,
-              );
-            },
-          ),
-        ],
+          return _RecipeStep(
+            stepNumber: index + 1,
+            text: _steps[index],
+            icon: iconData,
+          );
+        },
       ),
     );
   }
