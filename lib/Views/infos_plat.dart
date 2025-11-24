@@ -41,6 +41,16 @@ final List<Map<String, String>> _nutritionalValues = const [
   {'name': 'Sodium', 'value': '735 mg'},
 ];
 
+// Liste des ustensiles pour la nouvelle section dépliable
+final List<String> _utensils = const [
+  "Casserole (pour les pâtes)",
+  "Poêle anti-adhésive",
+  "Planche à découper",
+  "Couteau de cuisine",
+  "Cuillère en bois ou spatule",
+  "Égouttoir à pâtes",
+];
+
 
 // --- Classe Principale ---
 
@@ -82,8 +92,6 @@ class RecipePage extends StatelessWidget {
                 _buildIngredientsSection(),
                 const SizedBox(height: 20),
 
-                // NOTE: _buildEnsureSection a été supprimé
-
                 // Titre Recette centré
                 Center(
                   child: Padding(
@@ -99,24 +107,23 @@ class RecipePage extends StatelessWidget {
                 _buildStepsSection(),
                 const SizedBox(height: 20),
 
-                // Sections repliables (section Prix par portion retirée)
+                // Section repliable : Valeurs nutritionnelles
                 _buildExpandableSection(
                   context, 
                   'Valeurs nutritionnelles', 
                   'Voir les informations nutritionnelles', 
                   null, 
-                  _buildNutritionalDetails() // Contenu spécifique
+                  _buildNutritionalDetails()
                 ),
                 const Divider(height: 0),
+                
+                // Nouvelle section repliable : Ustensiles
                 _buildExpandableSection(
                   context, 
-                  'Scores', 
-                  'NUTRI-SCORE ABCDE', 
-                  const Icon(Icons.score, color: Colors.green), 
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text('Détails des scores NUTRI-SCORE et ECO-SCORE.'),
-                  ),
+                  'Ustensiles', 
+                  'Équipement nécessaire pour la recette', 
+                  const Icon(Icons.kitchen, color: Colors.black), // Icône ajoutée ici
+                  _buildUtensilsDetails() // Nouveau contenu
                 ),
                 const Divider(height: 0),
 
@@ -157,6 +164,27 @@ class RecipePage extends StatelessWidget {
       ),
     );
   }
+  
+  // Widget pour afficher la liste des ustensiles
+  Widget _buildUtensilsDetails() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 32.0, right: 16.0, top: 8.0, bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _utensils.map((utensil) {
+          // Utilisation d'un widget simple pour l'alignement et le saut de ligne
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4.0),
+            child: Text(
+              '• $utensil',
+              style: const TextStyle(fontSize: 15, height: 1.4),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
 
   // En-tête de la page (SliverAppBar)
   Widget _buildSliverAppBar() {
@@ -336,8 +364,6 @@ class RecipePage extends StatelessWidget {
       ),
     );
   }
-
-  // NOTE: La méthode _buildEnsureSection a été supprimée comme demandé.
 
   // Section des étapes de la recette (ListView)
   Widget _buildStepsSection() {
