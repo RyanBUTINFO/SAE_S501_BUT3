@@ -30,7 +30,7 @@ class _HomePageState extends State<HomePage> {
       'level': 'Moyen',
       'badge': 'Recette du jour',
     },
-    // Ajoute plus de recettes si besoin
+    // Ajoutez plus de recettes si besoin
   ];
 
   @override
@@ -63,130 +63,198 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(22),
-                boxShadow: [BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 10,
-                )],
-              ),
-              padding: EdgeInsets.symmetric(vertical: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      child: Text('Mode découverte'),
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: Color(0xFFE5EBE0),
-                        foregroundColor: Color(0xFF6B8E23),
-                        shape: StadiumBorder(),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+      // Le corps de la page est maintenant entièrement défilant
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, // Alignement à gauche
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 10,
+                  )],
+                ),
+                padding: EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: Text('Mode découverte'),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Color(0xFFE5EBE0),
+                          foregroundColor: Color(0xFF6B8E23),
+                          shape: StadiumBorder(),
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      child: Text('Mode recommandation'),
-                      style: ElevatedButton.styleFrom(
-                        elevation: 0,
-                        backgroundColor: Color(0xFFE5EBE0),
-                        foregroundColor: Color(0xFF6B8E23),
-                        shape: StadiumBorder(),
-                        padding: EdgeInsets.symmetric(vertical: 12),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        child: Text('Mode recommandation'),
+                        style: ElevatedButton.styleFrom(
+                          elevation: 0,
+                          backgroundColor: Color(0xFFE5EBE0),
+                          foregroundColor: Color(0xFF6B8E23),
+                          shape: StadiumBorder(),
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                        ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    height: 180,
+                    child: PageView.builder(
+                      controller: _pageController,
+                      itemCount: recettesDuJour.length,
+                      itemBuilder: (context, index) {
+                        final r = recettesDuJour[index];
+                        return recipeCard(
+                          image: r['image']!,
+                          title: r['title']!,
+                          level: r['level']!,
+                          badge: r['badge'],
+                        );
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    left: -5,
+                    child: IconButton(
+                      icon: Icon(Icons.chevron_left, size: 39, color: Color(0xFF6B8E23)),
+                      onPressed: () {
+                        _pageController.previousPage(
+                          duration: Duration(milliseconds: 500), curve: Curves.ease);
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    right: -5,
+                    child: IconButton(
+                      icon: Icon(Icons.chevron_right, size: 39, color: Color(0xFF6B8E23)),
+                      onPressed: () {
+                        _pageController.nextPage(
+                          duration: Duration(milliseconds: 500), curve: Curves.ease);
+                      },
                     ),
                   ),
                 ],
               ),
             ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  height: 180,
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: recettesDuJour.length,
-                    itemBuilder: (context, index) {
-                      final r = recettesDuJour[index];
-                      return recipeCard(
-                        image: r['image']!,
-                        title: r['title']!,
-                        level: r['level']!,
-                        badge: r['badge'],
-                      );
-                    },
-                  ),
-                ),
-                Positioned(
-                  left: -5,
-                  child: IconButton(
-                    icon: Icon(Icons.chevron_left, size: 39, color: Color(0xFF6B8E23)),
-                    onPressed: () {
-                      _pageController.previousPage(
-                        duration: Duration(milliseconds: 500), curve: Curves.ease);
-                    },
-                  ),
-                ),
-                Positioned(
-                  right: -5,
-                  child: IconButton(
-                    icon: Icon(Icons.chevron_right, size: 39, color: Color(0xFF6B8E23)),
-                    onPressed: () {
-                      _pageController.nextPage(
-                        duration: Duration(milliseconds: 500), curve: Curves.ease);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-            child: Align(
-              alignment: Alignment.centerLeft,
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               child: Text(
                 "Les top recettes",
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
               ),
             ),
-          ),
-          Expanded(
-            child: GridView.count(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 22),
-              crossAxisCount: 2,
-              mainAxisSpacing: 16,
-              crossAxisSpacing: 16,
-              childAspectRatio: 0.90,
-              children: [
-                gridRecipeCard(
-                  image: 'assets/images/cupcake.jpg',
-                  title: 'Tarte aux légumes',
-                  level: 'Faible',
-                ),
-                gridRecipeCard(
-                  image: 'assets/images/cupcake.jpg',
-                  title: 'Curry végétarien',
-                  level: 'Faible',
-                ),
-                // Ajoute plus de cases si tu veux
-              ],
+              child: GridView.count(
+                // Propriétés pour que le GridView.count fonctionne dans le SingleChildScrollView
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(), 
+                
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.90,
+                children: [
+                  // RECETTES INITIALES
+                  gridRecipeCard(
+                    image: 'assets/images/cupcake.jpg',
+                    title: 'Tarte aux légumes',
+                    level: 'Faible',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/cupcake.jpg',
+                    title: 'Curry végétarien',
+                    level: 'Faible',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/plat_vegetarien.jpg',
+                    title: 'Salade estivale',
+                    level: 'Facile',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/choco_cake.jpg',
+                    title: 'Lentilles corail épicées',
+                    level: 'Moyen',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/cupcake.jpg',
+                    title: 'Pancakes gourmands',
+                    level: 'Facile',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/plat_vegetarien.jpg',
+                    title: 'Soupe de carottes',
+                    level: 'Faible',
+                  ),
+                  
+                  // AJOUT DES 8 NOUVELLES RECETTES
+                  gridRecipeCard(
+                    image: 'assets/images/choco_cake.jpg',
+                    title: 'Mousse au chocolat noir',
+                    level: 'Moyen',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/plat_vegetarien.jpg',
+                    title: 'Risotto aux champignons',
+                    level: 'Moyen',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/cupcake.jpg',
+                    title: 'Crêpes sucrées parfaites',
+                    level: 'Facile',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/choco_cake.jpg',
+                    title: 'Tiramisu traditionnel',
+                    level: 'Difficile',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/plat_vegetarien.jpg',
+                    title: 'Lasagnes végétales',
+                    level: 'Moyen',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/cupcake.jpg',
+                    title: 'Smoothie détox vert',
+                    level: 'Faible',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/choco_cake.jpg',
+                    title: 'Brioche feuilletée',
+                    level: 'Difficile',
+                  ),
+                  gridRecipeCard(
+                    image: 'assets/images/plat_vegetarien.jpg',
+                    title: 'Bowl de quinoa épicé',
+                    level: 'Facile',
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: 20), // Ajout d'un espace en bas
+          ],
+        ),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
