@@ -32,6 +32,15 @@ final List<String> _steps = const [
   "Servez les pâtes crémeuses au poulet, champignons & épinards...",
 ];
 
+// Données nutritionnelles pour la tuile dépliable
+final List<Map<String, String>> _nutritionalValues = const [
+  {'name': 'Calories', 'value': '436 kcal'},
+  {'name': 'Cholesterol', 'value': '128 mg'},
+  {'name': 'Protéines', 'value': '46 g'},
+  {'name': 'Fibres', 'value': '1 g'},
+  {'name': 'Sodium', 'value': '735 mg'},
+];
+
 
 // --- Classe Principale ---
 
@@ -77,9 +86,24 @@ class RecipePage extends StatelessWidget {
                 const SizedBox(height: 20),
 
                 // Sections repliables (section Prix par portion retirée)
-                _buildExpandableSection(context, 'Valeurs nutritionnelles', 'Voir les informations nutritionnelles', null),
+                _buildExpandableSection(
+                  context, 
+                  'Valeurs nutritionnelles', 
+                  'Voir les informations nutritionnelles', 
+                  null, 
+                  _buildNutritionalDetails() // Contenu spécifique
+                ),
                 const Divider(height: 0),
-                _buildExpandableSection(context, 'Scores', 'NUTRI-SCORE ABCDE', const Icon(Icons.score, color: Colors.green)),
+                _buildExpandableSection(
+                  context, 
+                  'Scores', 
+                  'NUTRI-SCORE ABCDE', 
+                  const Icon(Icons.score, color: Colors.green), 
+                  const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: Text('Détails des scores NUTRI-SCORE et ECO-SCORE.'),
+                  ),
+                ),
                 const Divider(height: 0),
 
                 const SizedBox(height: 100),
@@ -93,6 +117,33 @@ class RecipePage extends StatelessWidget {
     );
   }
 
+  // Widget pour afficher les détails nutritionnels
+  Widget _buildNutritionalDetails() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        children: _nutritionalValues.map((nutrient) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  nutrient['name']!, 
+                  style: const TextStyle(fontSize: 15, color: Colors.black54),
+                ),
+                Text(
+                  nutrient['value']!, 
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   // En-tête de la page (SliverAppBar)
   Widget _buildSliverAppBar() {
     return SliverAppBar(
@@ -103,7 +154,7 @@ class RecipePage extends StatelessWidget {
         icon: const Icon(Icons.close, color: Colors.black),
         onPressed: () {},
       ),
-      actions: [ // Retrait de 'const' pour permettre l'utilisation de Tooltip
+      actions: [ 
         Tooltip(
           message: 'Ajouter aux favoris', // Texte affiché au survol/appui long
           child: Padding(
@@ -329,7 +380,7 @@ class RecipePage extends StatelessWidget {
   }
 
   // Section repliable générique
-  Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget) {
+  Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget, Widget content) {
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
@@ -342,11 +393,8 @@ class RecipePage extends StatelessWidget {
           const Icon(Icons.keyboard_arrow_down),
         ],
       ),
-      children: const [
-        Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('Contenu détaillé de la section...'),
-        ),
+      children: [
+        content,
       ],
     );
   }
