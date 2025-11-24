@@ -30,7 +30,6 @@ class _HomePageState extends State<HomePage> {
       'level': 'Moyen',
       'badge': 'Recette du jour',
     },
-    // Ajoutez plus de recettes si besoin
   ];
 
   @override
@@ -44,7 +43,9 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Row(
               children: [
-                Image.asset('assets/images/logo.png', width: 32, height: 32),
+                // NOTE: Si l'image n'est pas trouvée, une icône de restaurant est affichée.
+                Image.asset('assets/images/logo.png', width: 32, height: 32,
+                  errorBuilder: (context, error, stackTrace) => Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23)),),
                 const SizedBox(width: 8),
                 Text(
                   "Miaam",
@@ -130,6 +131,8 @@ class _HomePageState extends State<HomePage> {
                           title: r['title']!,
                           level: r['level']!,
                           badge: r['badge'],
+                          // La navigation est gérée à l'intérieur de recipeCard
+                          context: context, 
                         );
                       },
                     ),
@@ -181,31 +184,37 @@ class _HomePageState extends State<HomePage> {
                     image: 'assets/images/cupcake.jpg',
                     title: 'Tarte aux légumes',
                     level: 'Faible',
+                    context: context, // Passage du context
                   ),
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
                     title: 'Curry végétarien',
                     level: 'Faible',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/plat_vegetarien.jpg',
                     title: 'Salade estivale',
                     level: 'Facile',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/choco_cake.jpg',
                     title: 'Lentilles corail épicées',
                     level: 'Moyen',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
                     title: 'Pancakes gourmands',
                     level: 'Facile',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/plat_vegetarien.jpg',
                     title: 'Soupe de carottes',
                     level: 'Faible',
+                    context: context,
                   ),
                   
                   // AJOUT DES 8 NOUVELLES RECETTES
@@ -213,41 +222,49 @@ class _HomePageState extends State<HomePage> {
                     image: 'assets/images/choco_cake.jpg',
                     title: 'Mousse au chocolat noir',
                     level: 'Moyen',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/plat_vegetarien.jpg',
                     title: 'Risotto aux champignons',
                     level: 'Moyen',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
                     title: 'Crêpes sucrées parfaites',
                     level: 'Facile',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/choco_cake.jpg',
                     title: 'Tiramisu traditionnel',
                     level: 'Difficile',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/plat_vegetarien.jpg',
                     title: 'Lasagnes végétales',
                     level: 'Moyen',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
                     title: 'Smoothie détox vert',
                     level: 'Faible',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/choco_cake.jpg',
                     title: 'Brioche feuilletée',
                     level: 'Difficile',
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/plat_vegetarien.jpg',
                     title: 'Bowl de quinoa épicé',
                     level: 'Facile',
+                    context: context,
                   ),
                 ],
               ),
@@ -280,116 +297,132 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget recipeCard({required String image, required String title, required String level, String? badge}) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Color(0xFF6B8E23), width: 3),
-        image: DecorationImage(
-          image: AssetImage(image),
-          fit: BoxFit.cover,
+  // J'ajoute un paramètre context pour la navigation et j'enveloppe le Container dans un GestureDetector
+  Widget recipeCard({required String image, required String title, required String level, String? badge, required BuildContext context}) {
+    return GestureDetector(
+      onTap: () {
+        // Navigation vers la route nommée '/infos_plat'
+        Navigator.pushNamed(context, '/infos_plat');
+      },
+      child: Container(
+        margin: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Color(0xFF6B8E23), width: 3),
+          image: DecorationImage(
+            image: AssetImage(image),
+            fit: BoxFit.cover,
+            onError: (exception, stackTrace) { /* Gérer l'erreur d'image */ },
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFF6B8E23).withOpacity(0.15),
+              blurRadius: 14,
+              offset: Offset(0, 5),
+            ),
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 7,
+              offset: Offset(0, 1.5),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF6B8E23).withOpacity(0.15),
-            blurRadius: 14,
-            offset: Offset(0, 5),
-          ),
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 7,
-            offset: Offset(0, 1.5),
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          if (badge != null)
-            Positioned(
-              left: 20,
-              top: 15,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.8),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Text(
-                  badge,
-                  style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+        child: Stack(
+          children: [
+            if (badge != null)
+              Positioned(
+                left: 20,
+                top: 15,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 13, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Text(
+                    badge,
+                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+                  ),
                 ),
               ),
+            Positioned(
+              left: 20,
+              bottom: 26,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 19,
+                          shadows: [Shadow(color: Colors.black54, blurRadius: 2)]
+                      )),
+                  SizedBox(height: 5),
+                  Row(
+                    children: [
+                      Icon(Icons.local_fire_department,
+                          size: 17, color: Colors.orange.shade400),
+                      Text(' $level',
+                          style: TextStyle(color: Colors.orange.shade400, fontSize: 14)),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          Positioned(
-            left: 20,
-            bottom: 26,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 19,
-                        shadows: [Shadow(color: Colors.black54, blurRadius: 2)]
-                    )),
-                SizedBox(height: 5),
-                Row(
-                  children: [
-                    Icon(Icons.local_fire_department,
-                        size: 17, color: Colors.orange.shade400),
-                    Text(' $level',
-                        style: TextStyle(color: Colors.orange.shade400, fontSize: 14)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget gridRecipeCard({required String image, required String title, required String level}) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(15),
-        border: Border.all(color: Color(0xFF6B8E23), width: 2),
-        image: DecorationImage(
-          image: AssetImage(image),
-          fit: BoxFit.cover,
-          colorFilter: ColorFilter.mode(Colors.white.withOpacity(0.65), BlendMode.dstATop),
-        ),
-        boxShadow: [BoxShadow(color: Color(0xFF6B8E23).withOpacity(0.10), blurRadius: 10)],
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            left: 16,
-            bottom: 17,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15)),
-                SizedBox(height: 2),
-                Row(
-                  children: [
-                    Icon(Icons.water_drop,
-                        size: 16, color: Color(0xFF6B8E23)),
-                    Text(' $level',
-                        style: TextStyle(
-                            color: Color(0xFF6B8E23), fontSize: 13)),
-                  ],
-                ),
-              ],
-            ),
+  // J'ajoute un paramètre context pour la navigation et j'enveloppe le Container dans un GestureDetector
+  Widget gridRecipeCard({required String image, required String title, required String level, required BuildContext context}) {
+    return GestureDetector(
+      onTap: () {
+        // Navigation vers la route nommée '/infos_plat'
+        Navigator.pushNamed(context, '/infos_plat');
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: Color(0xFF6B8E23), width: 2),
+          image: DecorationImage(
+            image: AssetImage(image),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(Colors.white.withOpacity(0.65), BlendMode.dstATop),
+            onError: (exception, stackTrace) { /* Gérer l'erreur d'image */ },
           ),
-        ],
+          boxShadow: [BoxShadow(color: Color(0xFF6B8E23).withOpacity(0.10), blurRadius: 10)],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              left: 16,
+              bottom: 17,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title,
+                      style: TextStyle(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15)),
+                  SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Icon(Icons.water_drop,
+                          size: 16, color: Color(0xFF6B8E23)),
+                      Text(' $level',
+                          style: TextStyle(
+                              color: Color(0xFF6B8E23), fontSize: 13)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
