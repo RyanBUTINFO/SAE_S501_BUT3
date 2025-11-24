@@ -76,10 +76,8 @@ class RecipePage extends StatelessWidget {
                 _buildStepsSection(),
                 const SizedBox(height: 20),
 
-                // Sections repliables
+                // Sections repliables (section Prix par portion retirée)
                 _buildExpandableSection(context, 'Valeurs nutritionnelles', 'Voir les informations nutritionnelles', null),
-                const Divider(height: 0),
-                _buildExpandableSection(context, 'Prix par portion', '€€€', const Icon(Icons.euro, color: Colors.blue)),
                 const Divider(height: 0),
                 _buildExpandableSection(context, 'Scores', 'NUTRI-SCORE ABCDE', const Icon(Icons.score, color: Colors.green)),
                 const Divider(height: 0),
@@ -178,7 +176,7 @@ class RecipePage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              const _ScorePill(text1: '€€€', text2: 'Prix', icon: null),
+              // La _ScorePill du prix a été retirée ici.
               const _ScorePill(text1: 'Très facile', text2: '', icon: Icons.bar_chart),
               // Placeholders temporaires pour les scores
               Container(width: 50, height: 30, color: Colors.green.shade200, child: const Center(child: Text('Nutri', style: TextStyle(fontSize: 10)))),
