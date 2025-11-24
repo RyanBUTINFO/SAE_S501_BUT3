@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 
 // --- Définitions des Couleurs et Données (Rendus accessibles globalement) ---
 
-// Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info
+// Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info et la bannière
 const Color _kAppPrimaryColor = Color(0xFF6B8E23); 
-// Jaune/Orange de la bannière 
-const Color _kBannerColor = Color(0xFFF09855); 
-const Color _kAccentColor = Color(0xFFEA4C46); // Rouge des boutons et étoiles (maintenue si besoin ailleurs)
+// ANCIENNE COULEUR BANNIERE SUPPRIMÉE : const Color _kBannerColor = Color(0xFFF09855); 
+const Color _kAccentColor = Color(0xFFEA4C46); // Rouge des boutons et étoiles
 const Color _kBackgroundColor = Color(0xFFFAF6F0); // Couleur de fond très claire
 
 // Liste des ingrédients (pour la GridView)
@@ -187,39 +186,57 @@ class RecipePage extends StatelessWidget {
 
   // En-tête de la page (SliverAppBar)
   Widget _buildSliverAppBar() {
+    // Changement de la couleur de fond de la barre d'application en Vert Kaki
     return SliverAppBar(
-      backgroundColor: _kBannerColor, // Couleur de la bannière (Jaune/Orange)
+      backgroundColor: _kAppPrimaryColor.withOpacity(0.9), // Vert Kaki
       expandedHeight: 400.0,
       pinned: true,
-      leading: IconButton(
-        icon: const Icon(Icons.close, color: Colors.black),
-        onPressed: () {},
-      ),
-      actions: const [ 
-        // L'icône des favoris a été supprimée
-      ],
+      
+      // La zone 'leading' est retirée ici pour pouvoir gérer les icônes dans le FlexibleSpaceBar
+      leading: null, 
+      automaticallyImplyLeading: false, // Important pour ignorer le bouton de retour par défaut
+      
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: true,
         titlePadding: const EdgeInsets.only(bottom: 10.0),
         title: const SizedBox.shrink(),
-        background: Column(
+        background: Stack( // Utilisation d'un Stack pour positionner le cœur sur l'image
+          fit: StackFit.expand,
           children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
+            // 1. L'image de la recette (en fond du Stack)
+            Image.asset(
+              'assets/images_plats/poulet_pate_cremeuse.jpg',
+              fit: BoxFit.cover, // S'assure que l'image couvre tout l'espace disponible
+              // Placeholder si l'image n'existe pas
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey.shade200,
+                child: const Center(
+                  child: Icon(Icons.image, size: 80, color: Colors.grey),
+                ),
+              ),
+            ),
+            
+            // 2. NOUVELLE RANGÉE pour les icônes de navigation (Croix + Cœur)
+            Positioned(
+              top: 40, // Espacement du haut pour éviter de cacher sous la barre système/AppBar
+              left: 10,
+              right: 10,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // L'image de la recette chargée depuis les assets (simulée ici)
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images_plats/poulet_pate_cremeuse.jpg',
-                      fit: BoxFit.cover, // S'assure que l'image couvre tout l'espace disponible
-                      // Placeholder si l'image n'existe pas
-                      errorBuilder: (context, error, stackTrace) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Center(
-                          child: Icon(Icons.image, size: 80, color: Colors.grey),
-                        ),
-                      ),
+                  // Icône de fermeture (Croix)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28), // Taille légèrement augmentée pour être similaire au cœur
+                    onPressed: () {},
+                  ),
+                  
+                  // Icône de favori (Cœur)
+                  Tooltip(
+                    message: 'Ajouter aux favoris', // Texte affiché au survol/appui long
+                    child: IconButton(
+                      // Taille de l'icône réduite à 24 (était 30)
+                      icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28), 
+                      onPressed: () {},
                     ),
                   ),
                 ],
@@ -418,6 +435,8 @@ class _TimePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Les icônes et le texte de cette section sont déjà noirs, ils seront bien visibles
+    // sur le fond Vert Kaki.
     return Column(
       children: [
         Icon(icon, color: Colors.black, size: 28),
