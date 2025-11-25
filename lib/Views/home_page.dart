@@ -275,7 +275,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      // bottomNavigationBar supprimée ici
+      // bottomNavigationBar supprimée
     );
   }
 
