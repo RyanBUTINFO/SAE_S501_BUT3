@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'search_page.dart';     // AJOUTÉ
+import 'favorites_page.dart'; // AJOUTÉ
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -299,27 +301,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          selectedItemColor: Color(0xFF6B8E23),
-          unselectedItemColor: Colors.black38,
-          backgroundColor: Colors.white,
-          onTap: (index) => setState(() => currentIndex = index),
-          items: const [
-            BottomNavigationBarItem(
-                icon: Icon(Icons.home), label: 'Accueil'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.search), label: 'Rechercher'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.favorite_border), label: 'Favoris'),
-          ],
-        ),
-      ),
+      // bottomNavigationBar supprimée
     );
   }
 
