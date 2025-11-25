@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'search_page.dart';     // AJOUTÉ
+import 'favorites_page.dart'; // AJOUTÉ
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -184,7 +186,7 @@ class _HomePageState extends State<HomePage> {
                     image: 'assets/images/cupcake.jpg',
                     title: 'Tarte aux légumes',
                     level: 'Faible',
-                    context: context, // Passage du context
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
@@ -283,7 +285,16 @@ class _HomePageState extends State<HomePage> {
           selectedItemColor: Color(0xFF6B8E23),
           unselectedItemColor: Colors.black38,
           backgroundColor: Colors.white,
-          onTap: (index) => setState(() => currentIndex = index),
+          // MODIFICATION ICI : navigation réelle vers Search et Favoris
+          onTap: (index) {
+            if (index == 1) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage()));
+            } else if (index == 2) {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesPage()));
+            } else {
+              setState(() => currentIndex = index);
+            }
+          },
           items: const [
             BottomNavigationBarItem(
                 icon: Icon(Icons.home), label: 'Accueil'),
