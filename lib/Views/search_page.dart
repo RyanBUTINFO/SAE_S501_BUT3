@@ -6,10 +6,10 @@ class SearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Couleur de fond de la page
+      // Couleur de fond
       backgroundColor: const Color(0xFFF6F8F4),
 
-      // AppBar personnalisée avec hauteur fixe
+      // AppBar personnalisée
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: SafeArea(
@@ -17,7 +17,6 @@ class SearchPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                // Logo de l'application
                 Image.asset(
                   'assets/images/logo.png',
                   width: 32,
@@ -29,8 +28,6 @@ class SearchPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-
-                // Nom de l'application
                 const Text(
                   "Miaam",
                   style: TextStyle(
@@ -40,8 +37,6 @@ class SearchPage extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-
-                // Affichage de l'heure actuelle
                 Text(
                   TimeOfDay.now().format(context),
                   style: const TextStyle(color: Colors.black38),
@@ -52,10 +47,11 @@ class SearchPage extends StatelessWidget {
         ),
       ),
 
-      // Contenu principal de la page
-      body: Padding(
+      // Contenu principal avec défilement
+      body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Champ de recherche
             TextField(
@@ -75,7 +71,7 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Petit texte explicatif sous le champ de recherche
+            // Petit texte explicatif
             const Padding(
               padding: EdgeInsets.all(20),
               child: Text(
@@ -87,7 +83,7 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Texte "OU" pour séparer les sections
+            // Texte "OU"
             const Text(
               'OU',
               style: TextStyle(
@@ -95,14 +91,59 @@ class SearchPage extends StatelessWidget {
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
               ),
+              textAlign: TextAlign.center,
             ),
 
             const SizedBox(height: 24),
 
-            // Zone où les résultats ou messages apparaîtront
+            // Rangée de suggestions
+            Row(
+              children: const [
+                Expanded(
+                  child: _SuggestionCard(
+                      title: 'Hiver',
+                      image: 'assets/images/poulet_pate_cremeuse.jpg'),
+                ),
+                SizedBox(width: 12),
+                Expanded(
+                  child: _SuggestionCard(
+                      title: 'Citadin stressé',
+                      image: 'assets/images/poulet_pate_cremeuse.jpg'),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // Zone résultats
             const Center(child: Text('Recherche')),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// Widget pour les cartes de suggestion
+class _SuggestionCard extends StatelessWidget {
+  final String title;
+  final String image;
+
+  const _SuggestionCard({required this.title, required this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Image.asset(image, fit: BoxFit.cover, height: 100),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
