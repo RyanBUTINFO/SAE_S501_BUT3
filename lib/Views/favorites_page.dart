@@ -90,9 +90,9 @@ class FavoritesPage extends StatelessWidget {
               // Texte explicatif pour guider l'utilisateur
               const Text(
                 'Créez des listes personnalisées pour organiser vos\nrecettes préférées.',
-                textAlign: TextAlign.center,
+                textAlign: TextAlign.center, // Centré
                 style: TextStyle(
-                  color: Colors.black54,
+                  color: Colors.black54, // Couleur grise
                 ),
               ),
 
@@ -101,8 +101,10 @@ class FavoritesPage extends StatelessWidget {
               // Bouton pour créer la première liste
               ElevatedButton.icon(
                 onPressed: () {
-                  // Action lorsque l'utilisateur appuie sur le bouton
-                  // Ici tu pourras ajouter la navigation vers l'écran de création de liste
+                  // Affiche un SnackBar pour confirmer la création
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("Liste créée !")),
+                  );
                 },
                 icon: const Icon(Icons.add, color: Colors.white),
                 label: const Text('Créer ma première liste'),
