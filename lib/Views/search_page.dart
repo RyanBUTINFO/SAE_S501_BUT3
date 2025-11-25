@@ -6,10 +6,10 @@ class SearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Couleur de fond
+      // Couleur de fond de la page
       backgroundColor: const Color(0xFFF6F8F4),
 
-      // AppBar personnalisée
+      // AppBar personnalisée avec hauteur fixe
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: SafeArea(
@@ -17,6 +17,7 @@ class SearchPage extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
+                // Logo de l'application avec fallback si l'image n'existe pas
                 Image.asset(
                   'assets/images/logo.png',
                   width: 32,
@@ -28,6 +29,8 @@ class SearchPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
+
+                // Nom de l'application
                 const Text(
                   "Miaam",
                   style: TextStyle(
@@ -37,6 +40,8 @@ class SearchPage extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
+
+                // Affichage de l'heure actuelle
                 Text(
                   TimeOfDay.now().format(context),
                   style: const TextStyle(color: Colors.black38),
@@ -47,13 +52,13 @@ class SearchPage extends StatelessWidget {
         ),
       ),
 
-      // Contenu principal avec défilement
+      // Contenu principal avec scroll pour éviter débordement clavier ou écran petit
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Champ de recherche
+            // Champ de recherche avec style personnalisé
             TextField(
               decoration: InputDecoration(
                 hintText: 'Une recette, des ingrédients...',
@@ -71,7 +76,7 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Petit texte explicatif
+            // Petit texte explicatif sous le champ de recherche
             const Padding(
               padding: EdgeInsets.all(20),
               child: Text(
@@ -83,7 +88,7 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // Texte "OU"
+            // Texte "OU" pour séparer les sections de recherche
             const Text(
               'OU',
               style: TextStyle(
@@ -96,15 +101,18 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Rangée de suggestions
+            // Rangée de suggestions (cartes)
             Row(
               children: const [
+                // Carte suggestion "Hiver"
                 Expanded(
                   child: _SuggestionCard(
                       title: 'Hiver',
                       image: 'assets/images/poulet_pate_cremeuse.jpg'),
                 ),
                 SizedBox(width: 12),
+
+                // Carte suggestion "Citadin stressé"
                 Expanded(
                   child: _SuggestionCard(
                       title: 'Citadin stressé',
@@ -115,7 +123,7 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 24),
 
-            // Zone résultats
+            // Zone des résultats ou messages de recherche
             const Center(child: Text('Recherche')),
           ],
         ),
@@ -124,7 +132,7 @@ class SearchPage extends StatelessWidget {
   }
 }
 
-// Widget pour les cartes de suggestion
+// Widget pour les cartes de suggestion avec gradient et texte sur l'image
 class _SuggestionCard extends StatelessWidget {
   final String title;
   final String image;
@@ -133,15 +141,39 @@ class _SuggestionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Stack(
+        fit: StackFit.expand,
         children: [
-          Image.asset(image, fit: BoxFit.cover, height: 100),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+          // Image de la carte
+          Image.asset(image, fit: BoxFit.cover),
+
+          // Gradient pour lisibilité du texte
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Colors.transparent, Colors.black87],
+              ),
+            ),
+          ),
+
+          // Texte du titre aligné en bas à gauche
+          Align(
+            alignment: Alignment.bottomLeft,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           ),
         ],
       ),
