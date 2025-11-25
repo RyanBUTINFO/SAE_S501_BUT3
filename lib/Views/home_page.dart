@@ -275,36 +275,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
-        ),
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          selectedItemColor: Color(0xFF6B8E23),
-          unselectedItemColor: Colors.black38,
-          backgroundColor: Colors.white,
-          // MODIFICATION ICI : navigation réelle vers Search et Favoris
-          onTap: (index) {
-            if (index == 1) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const SearchPage()));
-            } else if (index == 2) {
-              Navigator.push(context, MaterialPageRoute(builder: (_) => const FavoritesPage()));
-            } else {
-              setState(() => currentIndex = index);
-            }
-          },
-          items: const [
-            BottomNavigationBarItem(
-                icon: Icon(Icons.home), label: 'Accueil'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.search), label: 'Rechercher'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.favorite_border), label: 'Favoris'),
-          ],
-        ),
-      ),
+      // bottomNavigationBar supprimée ici
     );
   }
 
