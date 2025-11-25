@@ -357,15 +357,6 @@ class _HomePageState extends State<HomePage> {
             Divider(),
             // Options de menu
             ListTile(
-              leading: Icon(Icons.person_outline, color: Color(0xFF6B8E23)),
-              title: Text('Mon profil'),
-              trailing: Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                Navigator.pop(context);
-                // TODO: Navigation vers profil
-              },
-            ),
-            ListTile(
               leading: Icon(Icons.notifications_outlined, color: Color(0xFF6B8E23)),
               title: Text('Notifications'),
               trailing: Icon(Icons.chevron_right, color: Colors.grey),
