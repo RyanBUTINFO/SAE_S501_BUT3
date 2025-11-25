@@ -75,6 +75,18 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
+            // Petit texte explicatif sous le champ de recherche
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text(
+                'Tu peux rechercher une recette ou rechercher à partir d’ingrédients "poulet, courgettes"',
+                style: TextStyle(color: Colors.black54, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Zone où les résultats ou messages apparaîtront
             const Center(child: Text('Recherche')),
           ],
