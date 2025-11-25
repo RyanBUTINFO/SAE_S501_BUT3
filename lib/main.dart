@@ -9,8 +9,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  
   // Initialisation de la base
+  
   final dbHelper = DatabaseHelper();
   await dbHelper.initDatabase();
 
@@ -24,6 +25,7 @@ void main() async {
     print("Base web prête (Sembast)");
   }
 
+  /*
   // ------------------ Tests équipe backend en console ------------------
   print('-------------------------------------------------');
   print("\n\n\n  Tests effectués par l'équipe backend :  ");
@@ -39,6 +41,7 @@ void main() async {
 
   print("\n Fin Tests de l'équipe du backend \n");
   print('-------------------------------------------------');
+  */
 
   // Lancement de l'application Flutter
   runApp(const MiaamApp());
