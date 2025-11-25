@@ -90,9 +90,26 @@ class FavoritesPage extends StatelessWidget {
               // Texte explicatif pour guider l'utilisateur
               const Text(
                 'Créez des listes personnalisées pour organiser vos\nrecettes préférées.',
-                textAlign: TextAlign.center, // Centré
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.black54, // Couleur grise
+                  color: Colors.black54,
+                ),
+              ),
+
+              const SizedBox(height: 40), // Espacement avant le bouton
+
+              // Bouton pour créer la première liste
+              ElevatedButton.icon(
+                onPressed: () {
+                  // Action lorsque l'utilisateur appuie sur le bouton
+                  // Ici tu pourras ajouter la navigation vers l'écran de création de liste
+                },
+                icon: const Icon(Icons.add, color: Colors.white),
+                label: const Text('Créer ma première liste'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF6B8E23), // Couleur verte
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  shape: const StadiumBorder(), // Bouton arrondi
                 ),
               ),
             ],
