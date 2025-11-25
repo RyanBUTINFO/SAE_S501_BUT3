@@ -87,6 +87,18 @@ class SearchPage extends StatelessWidget {
 
             const SizedBox(height: 16),
 
+            // Texte "OU" pour séparer les sections
+            const Text(
+              'OU',
+              style: TextStyle(
+                color: Colors.black54,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
             // Zone où les résultats ou messages apparaîtront
             const Center(child: Text('Recherche')),
           ],
