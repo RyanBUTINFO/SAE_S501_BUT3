@@ -9,94 +9,15 @@ class FavoritesPage extends StatefulWidget {
 }
 
 class _FavoritesPageState extends State<FavoritesPage> {
-  // true = état vide avec  cœur (premier écran)
-  // false = on a au moins une liste (écran avec cartes)
-  bool _isEmpty = true;
+  // Liste des listes créées
+  List<Map<String, dynamic>> favoriteLists = [];
+
+  // Pour savoir si on est dans le détail d'une liste
+  Map<String, dynamic>? selectedList;
 
   final TextEditingController _controller = TextEditingController();
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF6F8F4),
-
-      // === APPBAR MIAAM (identique aux autres pages) ===
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                Image.asset('assets/images/logo.png', width: 32, height: 32,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23))),
-                const SizedBox(width: 8),
-                const Text("Miaam", style: TextStyle(color: Color(0xFF6B8E23), fontWeight: FontWeight.w700, fontSize: 22)),
-                const Spacer(),
-                Text(TimeOfDay.now().format(context), style: const TextStyle(color: Colors.black38)),
-              ],
-            ),
-          ),
-        ),
-      ),
-
-      
-      body: _isEmpty ? _buildEmptyState() : _buildListState(),
-    );
-  }
-
-  
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            //cœur rose
-            Container(
-              width: 120,
-              height: 120,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(0xFFFFF0F0),
-              ),
-              child: const Icon(Icons.favorite, size: 70, color: Colors.redAccent),
-            ),
-            const SizedBox(height: 40),
-
-            const Text(
-              "Aucune liste de favoris",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              "Créez des listes personnalisées pour organiser vos\nrecettes préférées.",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54, height: 1.4),
-            ),
-            const SizedBox(height: 40),
-
-            //bouton vert (clic → ouvre la modale)
-            ElevatedButton.icon(
-              onPressed: _showCreateListDialog,
-              icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text("Créer ma première liste", style: TextStyle(fontSize: 16)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF6B8E23),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
-                shape: const StadiumBorder(),
-                elevation: 6,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Modale "Nouvelle liste de favoris"
+  // === MODALE CRÉATION LISTE ===
   void _showCreateListDialog() {
     showDialog(
       context: context,
@@ -117,13 +38,13 @@ class _FavoritesPageState extends State<FavoritesPage> {
           TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
           ElevatedButton(
             onPressed: () {
-              if (_controller.text.trim().isNotEmpty) {
-                setState(() => _isEmpty = false); // passe à l’état IMAGE 3
-                _controller.clear();
+              final name = _controller.text.trim();
+              if (name.isNotEmpty) {
+                setState(() {
+                  favoriteLists.add({"name": name, "recipes": <String>[]});
+                  _controller.clear();
+                });
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Liste créée !"), backgroundColor: Color(0xFF6B8E23)),
-                );
               }
             },
             style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6B8E23)),
@@ -134,42 +55,140 @@ class _FavoritesPageState extends State<FavoritesPage> {
     );
   }
 
-  //État avec une liste + "Parcourir les recettes"
-  Widget _buildListState() {
-    return Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        children: [
-          // Carte de la liste créée
-          Card(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            elevation: 4,
-            child: ListTile(
-              leading: const Icon(Icons.bookmark_border, color: Color(0xFF6B8E23), size: 32),
-              title: Text(_controller.text.isEmpty ? "Ma liste" : _controller.text, style: const TextStyle(fontWeight: FontWeight.w600)),
-              subtitle: const Text("0 recettes"),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F8F4),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Image.asset('assets/images/logo.png', width: 32, height: 32,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23))),
+                const SizedBox(width: 8),
+                const Text("Miaam", style: TextStyle(color: Color(0xFF6B8E23), fontWeight: FontWeight.w700, fontSize: 22)),
+                const Spacer(),
+                Text(TimeOfDay.now().format(context), style: const TextStyle(color: Colors.black38)),
+              ],
             ),
           ),
-          const SizedBox(height: 40),
-
-          // Texte gris centré
-          const Text("Aucune recette pour le moment", style: TextStyle(color: Colors.black54, fontSize: 16)),
-          const SizedBox(height: 20),
-
-          // Bouton "Parcourir les recettes" vert
-          TextButton(
-            onPressed: () {
-              // Retour à l'accueil
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text(
-              "Parcourir les recettes",
-              style: TextStyle(color: Color(0xFF6B8E23), fontWeight: FontWeight.bold, fontSize: 17),
-            ),
-          ),
-        ],
+        ),
       ),
+
+      // État vide → gros cœur + gros bouton
+      body: favoriteLists.isEmpty
+          ? _buildEmptyState()
+          : selectedList != null
+              ? _buildListDetail() // ← quand on clique sur la flèche
+              : _buildListsOverview(), // ← page principale avec les cartes
+
+      floatingActionButton: favoriteLists.isNotEmpty && selectedList == null
+          ? FloatingActionButton(
+              backgroundColor: const Color(0xFF6B8E23),
+              onPressed: _showCreateListDialog,
+              child: const Icon(Icons.add, color: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  // 1. État vide (premier écran)
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 120, height: 120,
+              decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFFFFF0F0)),
+              child: const Icon(Icons.favorite, size: 70, color: Colors.redAccent),
+            ),
+            const SizedBox(height: 40),
+            const Text("Aucune liste de favoris", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            const Text("Créez des listes personnalisées pour organiser vos\nrecettes préférées.", textAlign: TextAlign.center, style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 40),
+            ElevatedButton.icon(
+              onPressed: _showCreateListDialog,
+              icon: const Icon(Icons.add),
+              label: const Text("Créer ma première liste", style: TextStyle(fontSize: 16)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF6B8E23),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+                shape: const StadiumBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // 2. Page principale avec les cartes de listes
+  Widget _buildListsOverview() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: favoriteLists.length,
+      itemBuilder: (context, index) {
+        final list = favoriteLists[index];
+        return Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          color: const Color(0xFFFFF5F5),
+          child: ListTile(
+            leading: const Icon(Icons.bookmark_border, color: Color(0xFF6B8E23)),
+            title: Text(list["name"], style: const TextStyle(fontWeight: FontWeight.w600)),
+            subtitle: Text("${list["recipes"].length} recettes"),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: () {
+                    setState(() {
+                      favoriteLists.removeAt(index);
+                      if (favoriteLists.isEmpty) selectedList = null;
+                    });
+                  },
+                ),
+                const Icon(Icons.arrow_forward_ios, size: 18),
+              ],
+            ),
+            onTap: () => setState(() => selectedList = list),
+          ),
+        );
+      },
+    );
+  }
+
+  // 3. Détail d'une liste (quand on clique sur la flèche)
+  Widget _buildListDetail() {
+    return Column(
+      children: [
+        // Bouton retour
+        Align(
+          alignment: Alignment.centerLeft,
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF6B8E23)),
+            onPressed: () => setState(() => selectedList = null),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(selectedList!["name"], style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 40),
+
+        // Ici il n'y a encore aucune recette
+        const Text("Aucune recette pour le moment", style: TextStyle(color: Colors.black54, fontSize: 16)),
+        const SizedBox(height: 20),
+        TextButton(
+          onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+          child: const Text("Parcourir les recettes", style: TextStyle(color: Color(0xFF6B8E23), fontWeight: FontWeight.bold, fontSize: 17)),
+        ),
+      ],
     );
   }
 
