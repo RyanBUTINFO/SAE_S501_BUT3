@@ -43,32 +43,54 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
             child: Row(
               children: [
-                // NOTE: Si l'image n'est pas trouvée, une icône de restaurant est affichée.
-                Image.asset('assets/images/logo.png', width: 32, height: 32,
-                  errorBuilder: (context, error, stackTrace) => Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23)),),
+                // Logo
+                Image.asset(
+                  'assets/images/logo.png', 
+                  width: 32, 
+                  height: 32,
+                  errorBuilder: (context, error, stackTrace) => 
+                    Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23)),
+                ),
                 const SizedBox(width: 8),
+                // Titre
                 Text(
                   "Miaam",
                   style: TextStyle(
-                      color: Color(0xFF6B8E23),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22),
+                    color: Color(0xFF6B8E23),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 22
+                  ),
                 ),
                 Spacer(),
+                // Heure
                 Text(
                   TimeOfDay.now().format(context),
-                  style: TextStyle(color: Colors.black38),
+                  style: TextStyle(color: Colors.black38, fontSize: 14),
+                ),
+                const SizedBox(width: 12),
+                // NOUVEAU : Icône Paramètres
+                IconButton(
+                  icon: Icon(
+                    Icons.settings_outlined,
+                    color: Color(0xFF6B8E23),
+                    size: 26,
+                  ),
+                  onPressed: () {
+                    // TODO: Navigation vers page paramètres
+                    _showSettingsMenu(context);
+                  },
+                  tooltip: 'Paramètres',
                 ),
               ],
             ),
           ),
         ),
       ),
-      // Le corps de la page est maintenant entièrement défilant
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start, // Alignement à gauche
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Boutons Mode découverte / Mode recommandation
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
               child: Container(
@@ -114,6 +136,8 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
             ),
+            
+            // Carrousel recettes du jour
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Stack(
@@ -131,7 +155,6 @@ class _HomePageState extends State<HomePage> {
                           title: r['title']!,
                           level: r['level']!,
                           badge: r['badge'],
-                          // La navigation est gérée à l'intérieur de recipeCard
                           context: context, 
                         );
                       },
@@ -143,7 +166,9 @@ class _HomePageState extends State<HomePage> {
                       icon: Icon(Icons.chevron_left, size: 39, color: Color(0xFF6B8E23)),
                       onPressed: () {
                         _pageController.previousPage(
-                          duration: Duration(milliseconds: 500), curve: Curves.ease);
+                          duration: Duration(milliseconds: 500), 
+                          curve: Curves.ease
+                        );
                       },
                     ),
                   ),
@@ -153,13 +178,17 @@ class _HomePageState extends State<HomePage> {
                       icon: Icon(Icons.chevron_right, size: 39, color: Color(0xFF6B8E23)),
                       onPressed: () {
                         _pageController.nextPage(
-                          duration: Duration(milliseconds: 500), curve: Curves.ease);
+                          duration: Duration(milliseconds: 500), 
+                          curve: Curves.ease
+                        );
                       },
                     ),
                   ),
                 ],
               ),
             ),
+            
+            // Titre "Les top recettes"
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
               child: Text(
@@ -167,24 +196,23 @@ class _HomePageState extends State<HomePage> {
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
               ),
             ),
+            
+            // Grille de recettes
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 22),
               child: GridView.count(
-                // Propriétés pour que le GridView.count fonctionne dans le SingleChildScrollView
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(), 
-                
                 crossAxisCount: 2,
                 mainAxisSpacing: 16,
                 crossAxisSpacing: 16,
                 childAspectRatio: 0.90,
                 children: [
-                  // RECETTES INITIALES
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
                     title: 'Tarte aux légumes',
                     level: 'Faible',
-                    context: context, // Passage du context
+                    context: context,
                   ),
                   gridRecipeCard(
                     image: 'assets/images/cupcake.jpg',
@@ -216,8 +244,6 @@ class _HomePageState extends State<HomePage> {
                     level: 'Faible',
                     context: context,
                   ),
-                  
-                  // AJOUT DES 8 NOUVELLES RECETTES
                   gridRecipeCard(
                     image: 'assets/images/choco_cake.jpg',
                     title: 'Mousse au chocolat noir',
@@ -269,7 +295,7 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            SizedBox(height: 20), // Ajout d'un espace en bas
+            SizedBox(height: 20),
           ],
         ),
       ),
@@ -297,11 +323,109 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // J'ajoute un paramètre context pour la navigation et j'enveloppe le Container dans un GestureDetector
-  Widget recipeCard({required String image, required String title, required String level, String? badge, required BuildContext context}) {
+  // Menu contextuel des paramètres
+  void _showSettingsMenu(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Titre
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(Icons.settings, color: Color(0xFF6B8E23), size: 28),
+                  SizedBox(width: 10),
+                  Text(
+                    'Paramètres',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF6B8E23),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Divider(),
+            // Options de menu
+            ListTile(
+              leading: Icon(Icons.person_outline, color: Color(0xFF6B8E23)),
+              title: Text('Mon profil'),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigation vers profil
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.notifications_outlined, color: Color(0xFF6B8E23)),
+              title: Text('Notifications'),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigation vers notifications
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.restaurant_menu, color: Color(0xFF6B8E23)),
+              title: Text('Préférences alimentaires'),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigation vers préférences
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.language, color: Color(0xFF6B8E23)),
+              title: Text('Langue'),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Sélection de langue
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.help_outline, color: Color(0xFF6B8E23)),
+              title: Text('Aide & Support'),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigation vers aide
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.info_outline, color: Color(0xFF6B8E23)),
+              title: Text('À propos'),
+              trailing: Icon(Icons.chevron_right, color: Colors.grey),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: Navigation vers à propos
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Widget carte recette carrousel
+  Widget recipeCard({
+    required String image, 
+    required String title, 
+    required String level, 
+    String? badge, 
+    required BuildContext context
+  }) {
     return GestureDetector(
       onTap: () {
-        // Navigation vers la route nommée '/infos_plat'
         Navigator.pushNamed(context, '/infos_plat');
       },
       child: Container(
@@ -312,7 +436,7 @@ class _HomePageState extends State<HomePage> {
           image: DecorationImage(
             image: AssetImage(image),
             fit: BoxFit.cover,
-            onError: (exception, stackTrace) { /* Gérer l'erreur d'image */ },
+            onError: (exception, stackTrace) {},
           ),
           boxShadow: [
             BoxShadow(
@@ -351,13 +475,15 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 19,
-                          shadows: [Shadow(color: Colors.black54, blurRadius: 2)]
-                      )),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 19,
+                      shadows: [Shadow(color: Colors.black54, blurRadius: 2)]
+                    )
+                  ),
                   SizedBox(height: 5),
                   Row(
                     children: [
@@ -376,11 +502,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // J'ajoute un paramètre context pour la navigation et j'enveloppe le Container dans un GestureDetector
-  Widget gridRecipeCard({required String image, required String title, required String level, required BuildContext context}) {
+  // Widget carte recette grille
+  Widget gridRecipeCard({
+    required String image, 
+    required String title, 
+    required String level, 
+    required BuildContext context
+  }) {
     return GestureDetector(
       onTap: () {
-        // Navigation vers la route nommée '/infos_plat'
         Navigator.pushNamed(context, '/infos_plat');
       },
       child: Container(
@@ -390,10 +520,18 @@ class _HomePageState extends State<HomePage> {
           image: DecorationImage(
             image: AssetImage(image),
             fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(Colors.white.withOpacity(0.65), BlendMode.dstATop),
-            onError: (exception, stackTrace) { /* Gérer l'erreur d'image */ },
+            colorFilter: ColorFilter.mode(
+              Colors.white.withOpacity(0.65), 
+              BlendMode.dstATop
+            ),
+            onError: (exception, stackTrace) {},
           ),
-          boxShadow: [BoxShadow(color: Color(0xFF6B8E23).withOpacity(0.10), blurRadius: 10)],
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFF6B8E23).withOpacity(0.10), 
+              blurRadius: 10
+            )
+          ],
         ),
         child: Stack(
           children: [
@@ -403,11 +541,14 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 15)),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15
+                    )
+                  ),
                   SizedBox(height: 2),
                   Row(
                     children: [
