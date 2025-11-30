@@ -1,11 +1,10 @@
-import 'dart:convert';
+import 'dart:io' show File, Directory;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
 import 'package:sembast/sembast.dart';
 import 'package:sembast_web/sembast_web.dart';
-import 'package:csv/csv.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
@@ -13,203 +12,80 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   sqflite.Database? _sqfliteDb; 
-  Database? _sembastDb;          
-
+  Database? _sembastDb; 
+  
   sqflite.Database? get sqfliteDb => _sqfliteDb;
   Database? get sembastDb => _sembastDb;
 
+  // Chemin vers la DB pré-remplie dans les assets
+  static const String _dbAssetPath = 'assets/database/base_miaam.db';
+  static const String _dbName = 'base_miaam.db';
+
+
   Future<void> initDatabase() async {
     if (kIsWeb) {
+      // Logique pour le Web (Sembast)
       final dbFactory = databaseFactoryWeb;
       _sembastDb = await dbFactory.openDatabase('miaam_web.db');
       print('Base web (Sembast Web) initialisée');
     } else {
-      if (_sqfliteDb != null) return;
-
+      // Logique pour Mobile/Desktop (SQLite)
       final dbPath = await sqflite.getDatabasesPath();
-      final path = join(dbPath, 'base_miaam.db');
+      final path = join(dbPath, _dbName);
+      
+      // Vérifie si la DB existe déjà.
+      final exists = await File(path).exists();
+      
+      if (!exists) {
+        // --- LOGIQUE FINALE: Copie de l'asset si la DB n'existe pas ---
+        print('Base de données non trouvée. Début de la copie rapide de l\'asset.');
+        
+        try {
+          // 1. Lire l'asset (votre base de données pré-remplie)
+          final data = await rootBundle.load(_dbAssetPath);
+          
+          // 2. Créer les répertoires si nécessaire
+          await Directory(dirname(path)).create(recursive: true);
+          
+          // 3. Écrire l'asset dans le dossier des bases de données de l'application
+          final List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+          await File(path).writeAsBytes(bytes, flush: true);
 
+          print('Base de données $_dbName copiée avec succès de l\'asset. Prête à l\'emploi.');
+
+        } catch (e) {
+          print('ERREUR: Impossible de copier la base de données de l\'asset. Vérifiez le chemin et le fichier pubspec.yaml. $e');
+        }
+      } else {
+        print('Base de données déjà existante. Ouverture directe.');
+      }
+
+      // Ouvre la base de données (que ce soit la nouvelle ou l'existante)
       _sqfliteDb = await sqflite.openDatabase(
         path,
         version: 1,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE plats (
-              id INTEGER PRIMARY KEY,
-              nom TEXT NOT NULL,
-              type TEXT,
-              cuisine TEXT,
-              origine TEXT,
-              temps_preparation REAL,
-              temps_cuisson REAL,
-              nb_personnes INTEGER,
-              nombre_etapes INTEGER,
-              instructions TEXT,
-              methodes_cuisson TEXT,
-              ustensiles TEXT,
-              image_path TEXT,
-              calories TEXT,
-              valeur_nutritionnelle TEXT,
-              empreinte_carbone REAL
-            );
-          ''');
-          await db.execute('''
-            CREATE TABLE ingredients (
-              id INTEGER PRIMARY KEY,
-              nom TEXT NOT NULL UNIQUE
-            );
-          ''');
-          await db.execute('''
-            CREATE TABLE plat_ingredient (
-              plat_id INTEGER NOT NULL,
-              ingredient_id INTEGER NOT NULL,
-              quantite REAL,
-              unite TEXT,
-              PRIMARY KEY (plat_id, ingredient_id),
-              FOREIGN KEY (plat_id) REFERENCES plats(id),
-              FOREIGN KEY (ingredient_id) REFERENCES ingredients(id)
-            );
-          ''');
-        },
+        onOpen: (db) {
+          print('Base mobile/desktop (SQLite) ouverte. Lancement RAPIDE.');
+        }
       );
-      print('Base mobile/desktop (SQLite) initialisée');
     }
-
-    await importCsvToDb();
   }
-
-  // ----------------------------
-  // Charge CSV depuis assets
-  // ----------------------------
-  Future<List<Map<String, dynamic>>> loadCsv(String path) async {
-    final csvString = await rootBundle.loadString(path);
-    final csvRows = const CsvToListConverter(
-      fieldDelimiter: ';',
-      eol: '\n',
-      shouldParseNumbers: false,
-    ).convert(csvString);
-
-    final headers = csvRows.first.map((e) => e.toString()).toList();
-    final dataRows = csvRows.sublist(1);
-
-    return dataRows.map((row) {
-      final Map<String, dynamic> map = {}; // <-- dynamic pour pouvoir stocker double/int
-      for (int i = 0; i < headers.length; i++) {
-        map[headers[i]] = row[i].toString();
-      }
-      return map;
-    }).toList();
-  }
-
-  Future<void> importCsvToDb() async {
+  
+  // -----------------------------
+  // Méthode de Récupération de Données (Base)
+  // -----------------------------
+  Future<List<Map<String, dynamic>>> getAllPlats() async {
     if (kIsWeb) {
-      await _importCsvWeb();
+      // Logique de récupération Sembast (Web)
+      return []; 
     } else {
-      await _importCsvMobile();
+      // Logique de récupération SQLite (Mobile/Desktop)
+      final db = _sqfliteDb;
+      if (db == null) return [];
+      
+      final List<Map<String, dynamic>> maps = await db.query('plats');
+      
+      return maps;
     }
-  }
-
-  // -----------------------------
-  // Mobile/Desktop : SQLite transaction + batch
-  // -----------------------------
-  Future<void> _importCsvMobile() async {
-    final db = _sqfliteDb;
-    if (db == null) return;
-
-    final plats = await loadCsv('assets/Csv_database/plats.csv');
-    final ingredients = await loadCsv('assets/Csv_database/ingredients.csv');
-    final platIngredients = await loadCsv('assets/Csv_database/plat_ingredient.csv');
-
-    await db.transaction((txn) async {
-      // Plats
-      var platsBatch = txn.batch();
-      for (var plat in plats) {
-        plat['temps_preparation'] = plat['temps_preparation'] != null ? double.tryParse(plat['temps_preparation']!) : null;
-        plat['temps_cuisson'] = plat['temps_cuisson'] != null ? double.tryParse(plat['temps_cuisson']!) : null;
-        plat['nb_personnes'] = plat['nb_personnes'] != null ? int.tryParse(plat['nb_personnes']!) : null;
-        plat['nombre_etapes'] = plat['nombre_etapes'] != null ? int.tryParse(plat['nombre_etapes']!) : null;
-        plat['empreinte_carbone'] = plat['empreinte_carbone'] != null ? double.tryParse(plat['empreinte_carbone']!) : null;
-
-        plat['methodes_cuisson'] = plat['methodes_cuisson'] != null ? jsonEncode(plat['methodes_cuisson']) : '[]';
-        plat['ustensiles'] = plat['ustensiles'] != null ? jsonEncode(plat['ustensiles']) : '[]';
-
-        platsBatch.insert('plats', plat, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
-      }
-      await platsBatch.commit(noResult: true);
-
-      // Ingredients
-      var ingBatch = txn.batch();
-      for (var ing in ingredients) {
-        ingBatch.insert('ingredients', ing, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
-      }
-      await ingBatch.commit(noResult: true);
-
-      // Plat_Ingredient
-      var piBatch = txn.batch();
-      for (var pi in platIngredients) {
-        pi['quantite'] = pi['quantite'] != null ? double.tryParse(pi['quantite']!) : null;
-        piBatch.insert('plat_ingredient', pi, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
-      }
-      await piBatch.commit(noResult: true);
-
-      // Confirmation
-      final countPlatsResult = await txn.rawQuery('SELECT COUNT(*) as c FROM plats');
-      final countPlats = countPlatsResult.first['c'];
-
-      final countIngResult = await txn.rawQuery('SELECT COUNT(*) as c FROM ingredients');
-      final countIng = countIngResult.first['c'];
-
-      final countPIResult = await txn.rawQuery('SELECT COUNT(*) as c FROM plat_ingredient');
-      final countPI = countPIResult.first['c'];
-
-      print('CSV importés (Mobile/Desktop) : plats=$countPlats, ingredients=$countIng, plat_ingredient=$countPI');
-
-    });
-  }
-
-  // -----------------------------
-  // Web : Sembast transaction
-  // -----------------------------
-  Future<void> _importCsvWeb() async {
-    final db = _sembastDb;
-    if (db == null) return;
-
-    final platsStore = intMapStoreFactory.store('plats');
-    final ingredientsStore = intMapStoreFactory.store('ingredients');
-    final platIngredientStore = intMapStoreFactory.store('plat_ingredient');
-
-    final plats = await loadCsv('assets/Csv_database/plats.csv');
-    final ingredients = await loadCsv('assets/Csv_database/ingredients.csv');
-    final platIngredients = await loadCsv('assets/Csv_database/plat_ingredient.csv');
-
-    await db.transaction((txn) async {
-      for (var plat in plats) {
-        plat['temps_preparation'] = plat['temps_preparation'] != null ? double.tryParse(plat['temps_preparation']!) : null;
-        plat['temps_cuisson'] = plat['temps_cuisson'] != null ? double.tryParse(plat['temps_cuisson']!) : null;
-        plat['nb_personnes'] = plat['nb_personnes'] != null ? int.tryParse(plat['nb_personnes']!) : null;
-        plat['nombre_etapes'] = plat['nombre_etapes'] != null ? int.tryParse(plat['nombre_etapes']!) : null;
-        plat['empreinte_carbone'] = plat['empreinte_carbone'] != null ? double.tryParse(plat['empreinte_carbone']!) : null;
-
-        plat['methodes_cuisson'] = plat['methodes_cuisson'] != null ? jsonEncode(plat['methodes_cuisson']) : '[]';
-        plat['ustensiles'] = plat['ustensiles'] != null ? jsonEncode(plat['ustensiles']) : '[]';
-
-        await platsStore.add(txn, plat);
-      }
-
-      for (var ing in ingredients) {
-        await ingredientsStore.add(txn, ing);
-      }
-
-      for (var pi in platIngredients) {
-        pi['quantite'] = pi['quantite'] != null ? double.tryParse(pi['quantite']!) : null;
-        await platIngredientStore.add(txn, pi);
-      }
-
-      // Confirmation Web
-      final countPlats = await platsStore.count(txn);
-      final countIng = await ingredientsStore.count(txn);
-      final countPI = await platIngredientStore.count(txn);
-      print('CSV importés (Web) : plats=$countPlats, ingredients=$countIng, plat_ingredient=$countPI');
-    });
   }
 }
