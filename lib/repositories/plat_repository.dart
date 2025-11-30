@@ -71,4 +71,51 @@ class PlatRepository {
       }).toList();
     }
   }
+  /// Recherche des plats par nom (contient le texte, insensible à la casse)
+/// Recherche des plats par nom (contient le texte, insensible à la casse)
+  Future<List<Plat>> searchPlatsByName(String query, {int limit = 10}) async {
+    if (query.isEmpty) return [];
+
+    final lowerQuery = query.toLowerCase();
+
+    if (kIsWeb) {
+      final store = intMapStoreFactory.store('plats');
+      final snapshot = await store.find(_dbHelper.sembastDb!);
+
+      return snapshot.map((record) {
+        final plat = Plat.fromMap(record.value);
+
+        final nom = plat.nom ?? ""; // Sécurisation null
+        if (nom.toLowerCase().contains(lowerQuery)) {
+          plat.image = plat.imagePath;
+          plat.title = nom;
+          plat.level = plat.type;
+          plat.context = plat.instructionsText;
+          return plat;
+        }
+        return null;
+      }).whereType<Plat>().take(limit).toList();
+    } else {
+      final db = _dbHelper.sqfliteDb!;
+      final result = await db.query(
+        'plats',
+        where: 'nom LIKE ?',
+        whereArgs: ['%$query%'],
+        limit: limit,
+      );
+
+      return result.map((e) {
+        final plat = Plat.fromMap(e);
+
+        final nom = plat.nom ?? "";
+        plat.image = plat.imagePath;
+        plat.title = nom;
+        plat.level = plat.type;
+        plat.context = plat.instructionsText;
+
+        return plat;
+      }).toList();
+    }
+  }
+
 }
