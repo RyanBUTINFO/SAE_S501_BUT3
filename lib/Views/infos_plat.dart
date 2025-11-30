@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 
 // --- Définitions des Couleurs et Données (Rendus accessibles globalement) ---
 
-// Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info
+// Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info et la bannière
 const Color _kAppPrimaryColor = Color(0xFF6B8E23); 
-// Jaune/Orange de la bannière 
-const Color _kBannerColor = Color(0xFFF09855); 
+// ANCIENNE COULEUR BANNIERE SUPPRIMÉE : const Color _kBannerColor = Color(0xFFF09855); 
 const Color _kAccentColor = Color(0xFFEA4C46); // Rouge des boutons et étoiles
 const Color _kBackgroundColor = Color(0xFFFAF6F0); // Couleur de fond très claire
 
@@ -30,6 +29,25 @@ final List<String> _steps = const [
   "Ajoutez la crème fraîche, le Kiri et un filet d'eau de cuisson réservée, si besoin...",
   "Ajoutez ensuite les pâtes égouttées et les herbes de Provence. Mélangez à nouveau.",
   "Servez les pâtes crémeuses au poulet, champignons & épinards...",
+];
+
+// Données nutritionnelles pour la tuile dépliable
+final List<Map<String, String>> _nutritionalValues = const [
+  {'name': 'Calories', 'value': '436 kcal'},
+  {'name': 'Cholesterol', 'value': '128 mg'},
+  {'name': 'Protéines', 'value': '46 g'},
+  {'name': 'Fibres', 'value': '1 g'},
+  {'name': 'Sodium', 'value': '735 mg'},
+];
+
+// Liste des ustensiles pour la nouvelle section dépliable
+final List<String> _utensils = const [
+  "Casserole (pour les pâtes)",
+  "Poêle anti-adhésive",
+  "Planche à découper",
+  "Couteau de cuisine",
+  "Cuillère en bois ou spatule",
+  "Égouttoir à pâtes",
 ];
 
 
@@ -58,11 +76,14 @@ class RecipePage extends StatelessWidget {
                 _buildInfoSection(context),
                 const SizedBox(height: 20),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Ingrédients',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                // Titre Ingrédients centré
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'Ingrédients',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -70,18 +91,39 @@ class RecipePage extends StatelessWidget {
                 _buildIngredientsSection(),
                 const SizedBox(height: 20),
 
-                _buildEnsureSection(context),
-                const SizedBox(height: 20),
+                // Titre Recette centré
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      'Recette',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
 
                 _buildStepsSection(),
                 const SizedBox(height: 20),
 
-                // Sections repliables
-                _buildExpandableSection(context, 'Valeurs nutritionnelles', 'Voir les informations nutritionnelles', null),
+                // Section repliable : Valeurs nutritionnelles
+                _buildExpandableSection(
+                  context, 
+                  'Valeurs nutritionnelles', 
+                  'Voir les informations nutritionnelles', 
+                  null, 
+                  _buildNutritionalDetails()
+                ),
                 const Divider(height: 0),
-                _buildExpandableSection(context, 'Prix par portion', '€€€', const Icon(Icons.euro, color: Colors.blue)),
-                const Divider(height: 0),
-                _buildExpandableSection(context, 'Scores', 'NUTRI-SCORE ABCDE', const Icon(Icons.score, color: Colors.green)),
+                
+                // Section repliable : Ustensiles
+                _buildExpandableSection(
+                  context, 
+                  'Ustensiles', 
+                  'Équipement nécessaire pour la recette', 
+                  const Icon(Icons.kitchen, color: Colors.black), 
+                  _buildUtensilsDetails()
+                ),
                 const Divider(height: 0),
 
                 const SizedBox(height: 100),
@@ -90,45 +132,111 @@ class RecipePage extends StatelessWidget {
           ),
         ],
       ),
-      // Bouton fixe en bas de page
-      bottomSheet: _buildBottomSheet(context),
+      // bottomSheet a été supprimé
     );
   }
 
+  // Widget pour afficher les détails nutritionnels
+  Widget _buildNutritionalDetails() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: Column(
+        children: _nutritionalValues.map((nutrient) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  nutrient['name']!, 
+                  style: const TextStyle(fontSize: 15, color: Colors.black54),
+                ),
+                Text(
+                  nutrient['value']!, 
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+  
+  // Widget pour afficher la liste des ustensiles
+  Widget _buildUtensilsDetails() {
+    return Padding(
+      padding: const EdgeInsets.only(left: 32.0, right: 16.0, top: 8.0, bottom: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: _utensils.map((utensil) {
+          // Utilisation d'un widget simple pour l'alignement et le saut de ligne
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 4.0),
+            child: Text(
+              '• $utensil',
+              style: const TextStyle(fontSize: 15, height: 1.4),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+
   // En-tête de la page (SliverAppBar)
   Widget _buildSliverAppBar() {
+    // Changement de la couleur de fond de la barre d'application en Vert Kaki
     return SliverAppBar(
-      backgroundColor: _kBannerColor, // Couleur de la bannière (Jaune/Orange)
+      backgroundColor: _kAppPrimaryColor.withOpacity(0.9), // Vert Kaki
       expandedHeight: 400.0,
       pinned: true,
-      leading: IconButton(
-        icon: const Icon(Icons.close, color: Colors.black),
-        onPressed: () {},
-      ),
-      actions: [ // Retrait de 'const' pour permettre l'utilisation de Tooltip
-        Tooltip(
-          message: 'Ajouter aux favoris', // Texte affiché au survol/appui long
-          child: Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: const Icon(Icons.favorite_border, color: Colors.black),
-          ),
-        ),
-      ],
+      
+      // La zone 'leading' est retirée ici pour pouvoir gérer les icônes dans le FlexibleSpaceBar
+      leading: null, 
+      automaticallyImplyLeading: false, // Important pour ignorer le bouton de retour par défaut
+      
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: true,
         titlePadding: const EdgeInsets.only(bottom: 10.0),
         title: const SizedBox.shrink(),
-        background: Column(
+        background: Stack( // Utilisation d'un Stack pour positionner le cœur sur l'image
+          fit: StackFit.expand,
           children: [
-            Expanded(
-              child: Stack(
-                alignment: Alignment.center,
+            // 1. L'image de la recette (en fond du Stack)
+            Image.asset(
+              'assets/images_plats/poulet_pate_cremeuse.jpg',
+              fit: BoxFit.cover, // S'assure que l'image couvre tout l'espace disponible
+              // Placeholder si l'image n'existe pas
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: Colors.grey.shade200,
+                child: const Center(
+                  child: Icon(Icons.image, size: 80, color: Colors.grey),
+                ),
+              ),
+            ),
+            
+            // 2. NOUVELLE RANGÉE pour les icônes de navigation (Croix + Cœur)
+            Positioned(
+              top: 40, // Espacement du haut pour éviter de cacher sous la barre système/AppBar
+              left: 10,
+              right: 10,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // L'image de la recette chargée depuis les assets
-                  Positioned.fill(
-                    child: Image.asset(
-                      'assets/images_plats/poulet_pate_cremeuse.jpg',
-                      fit: BoxFit.cover, // S'assure que l'image couvre tout l'espace disponible
+                  // Icône de fermeture (Croix)
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28), // Taille légèrement augmentée pour être similaire au cœur
+                    onPressed: () {},
+                  ),
+                  
+                  // Icône de favori (Cœur)
+                  Tooltip(
+                    message: 'Ajouter aux favoris', // Texte affiché au survol/appui long
+                    child: IconButton(
+                      // Taille de l'icône réduite à 24 (était 30)
+                      icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28), 
+                      onPressed: () {},
                     ),
                   ),
                 ],
@@ -140,23 +248,15 @@ class RecipePage extends StatelessWidget {
     );
   }
 
-  // Section d'introduction (Titre, Notes, Facilité, Scores)
+  // Section d'introduction (Titre, Eco-Score, Empreinte Carbone, Origine)
   Widget _buildIntroSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(5, (index) {
-              return Icon(
-                index < 3 ? Icons.star : (index == 3 ? Icons.star_half : Icons.star_border),
-                color: _kAccentColor,
-              );
-            }),
-          ),
-          const Text('18 notes', style: TextStyle(fontSize: 14)),
-          const SizedBox(height: 8),
+          // SUPPRIMÉ : Étoiles et '18 notes'
+
+          // Titre principal
           Text(
             'Pâtes crémeuses au poulet, champignons & épinards',
             textAlign: TextAlign.center,
@@ -175,31 +275,37 @@ class RecipePage extends StatelessWidget {
             style: TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 20),
+
+          // NOUVELLE RANGÉE D'INDICATEURS
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              const _ScorePill(text1: '€€€', text2: 'Prix', icon: null),
-              const _ScorePill(text1: 'Très facile', text2: '', icon: Icons.bar_chart),
-              // Placeholders temporaires pour les scores
-              Container(width: 50, height: 30, color: Colors.green.shade200, child: const Center(child: Text('Nutri', style: TextStyle(fontSize: 10)))),
-              Container(width: 50, height: 30, color: Colors.yellow.shade200, child: const Center(child: Text('Eco', style: TextStyle(fontSize: 10)))),
+              // 1. Eco-Score (Nouveau)
+              const _DataPill(
+                value: 'A', // Valeur de l'Eco-Score
+                label: 'Eco-Score', 
+                color: Color(0xFFC8E6C9), // Vert clair
+              ),
+              
+              // 2. Empreinte Carbone (Déjà existant)
+              const _DataPill(
+                value: '1.2 kg CO2eq', 
+                label: 'Empreinte Carbone', 
+                color: Color(0xFFF0F4C3), // Jaune très clair pour différencier
+              ),
+              
+              // 3. Origine (Déjà existant)
+              const _DataPill(
+                value: 'Italien', 
+                label: 'Origine', 
+                color: Color(0xFFE1BEE7), // Mauve très clair pour différencier
+              ),
             ],
           ),
           const SizedBox(height: 10),
+          
+          // SUPPRIMÉ : Section Partage
           const Divider(),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.share, size: 20),
-              const SizedBox(width: 5),
-              const Text('Partager', style: TextStyle(fontWeight: FontWeight.bold)),
-              const Spacer(),
-              const Text('3.3k', style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(width: 5),
-              Icon(Icons.favorite, size: 20, color: _kAccentColor),
-            ],
-          ),
         ],
       ),
     );
@@ -245,8 +351,7 @@ class RecipePage extends StatelessWidget {
                     Icon(Icons.people_alt, size: 18),
                     SizedBox(width: 5),
                     Text('1', style: TextStyle(fontWeight: FontWeight.bold)),
-                    SizedBox(width: 5),
-                    Icon(Icons.arrow_drop_down, size: 18),
+                    // La flèche déroulante a été supprimée ici
                   ],
                 ),
               ),
@@ -275,63 +380,30 @@ class RecipePage extends StatelessWidget {
     );
   }
 
-  // Section "Assurez-vous d'avoir..."
-  Widget _buildEnsureSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Assurez-vous d\'avoir...',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              const Text('Huile d\'olive (1 càc)', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 5),
-              Icon(Icons.info_outline, size: 16, color: Theme.of(context).primaryColor),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   // Section des étapes de la recette (ListView)
   Widget _buildStepsSection() {
+    // Retrait de l'ancien titre ici, il est géré dans le SliverList pour le centrage
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Recette',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          ),
-          const SizedBox(height: 10),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _steps.length,
-            itemBuilder: (context, index) {
-              final iconData = index < _ingredients.length ? _ingredients[index]['icon'] : null;
+      child: ListView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: _steps.length,
+        itemBuilder: (context, index) {
+          final iconData = index < _ingredients.length ? _ingredients[index]['icon'] : null;
 
-              return _RecipeStep(
-                stepNumber: index + 1,
-                text: _steps[index],
-                icon: iconData,
-              );
-            },
-          ),
-        ],
+          return _RecipeStep(
+            stepNumber: index + 1,
+            text: _steps[index],
+            icon: iconData,
+          );
+        },
       ),
     );
   }
 
   // Section repliable générique
-  Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget) {
+  Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget, Widget content) {
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
@@ -344,48 +416,16 @@ class RecipePage extends StatelessWidget {
           const Icon(Icons.keyboard_arrow_down),
         ],
       ),
-      children: const [
-        Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Text('Contenu détaillé de la section...'),
-        ),
+      children: [
+        content,
       ],
-    );
-  }
-
-  // Bouton fixe en bas de page (seulement le message de partage)
-  Widget _buildBottomSheet(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -5),
-          ),
-        ],
-      ),
-      child: const SafeArea( 
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Vous avez réalisé cette recette ? Partagez votre œuvre sur Insta',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
 // --- Widgets de support ---
 
+// Pilule pour Temps/Info (Préparation, Cuisson, Par portion)
 class _TimePill extends StatelessWidget {
   final IconData icon;
   final String time;
@@ -395,6 +435,8 @@ class _TimePill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Les icônes et le texte de cette section sont déjà noirs, ils seront bien visibles
+    // sur le fond Vert Kaki.
     return Column(
       children: [
         Icon(icon, color: Colors.black, size: 28),
@@ -406,21 +448,46 @@ class _TimePill extends StatelessWidget {
   }
 }
 
-class _ScorePill extends StatelessWidget {
-  final String text1;
-  final String text2;
-  final IconData? icon;
+// Pilule pour Data (Eco-Score, Empreinte Carbone, Origine)
+class _DataPill extends StatelessWidget {
+  final String value;
+  final String label;
+  final Color color;
 
-  const _ScorePill({required this.text1, required this.text2, this.icon});
+  const _DataPill({required this.value, required this.label, required this.color});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        if (icon != null) Icon(icon, size: 30, color: const Color(0xFF333333)),
-        if (icon == null) Text(text1, style: const TextStyle(fontSize: 24, color: Color(0xFF333333))),
-        Text(text2, style: const TextStyle(fontSize: 12)),
-      ],
+    return Container(
+      width: 95, // Largeur ajustée
+      height: 45, // Hauteur ajustée
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12, width: 0.5),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              value,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.black87),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 8, color: Colors.black54),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

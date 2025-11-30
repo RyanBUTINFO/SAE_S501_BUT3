@@ -2,8 +2,8 @@ class Plat {
   final int? id;
   final String? nom;
   final String? type;
-  final String? cuisine;   
-  final String? origine;   
+  final String? cuisine;
+  final String? origine;
   final double? preparationTime;
   final double? cookingTime;
   final int? nbPersonnes;
@@ -15,6 +15,12 @@ class Plat {
   final String? calories;
   final String? valeurNutritionnelle;
   final double? empreinteCarbone;
+
+  // Attributs additionnels pour l'app
+  String? image;   // alias pour imagePath
+  String? title;   // alias pour nom
+  String? level;   // alias pour type
+  String? context; // alias pour instructionsText
 
   Plat({
     this.id,
@@ -33,6 +39,10 @@ class Plat {
     this.calories,
     this.valeurNutritionnelle,
     this.empreinteCarbone,
+    this.image,
+    this.title,
+    this.level,
+    this.context,
   });
 
   factory Plat.fromMap(Map<String, dynamic> map) {
@@ -63,6 +73,32 @@ class Plat {
       empreinteCarbone: (map['empreinte_carbone'] is num)
           ? (map['empreinte_carbone'] as num).toDouble()
           : double.tryParse(map['empreinte_carbone'].toString()),
+      // Initialisation des alias
+      image: map['image_path'] as String?,
+      title: map['nom'] as String?,
+      level: map['type'] as String?,
+      context: map['instructions_text'] as String?,
     );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'nom': nom,
+      'type': type,
+      'cuisine': cuisine,
+      'origine': origine,
+      'preparation_time': preparationTime,
+      'cooking_time': cookingTime,
+      'nb_personnes': nbPersonnes,
+      'number_of_steps': numberOfSteps,
+      'instructions_text': instructionsText,
+      'cooking_methods': cookingMethods,
+      'ustensiles': ustensiles,
+      'image_path': imagePath,
+      'Calories': calories,
+      'Valeur_nutritionnelle': valeurNutritionnelle,
+      'empreinte_carbone': empreinteCarbone,
+    };
   }
 }
