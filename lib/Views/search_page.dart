@@ -1,5 +1,8 @@
 // lib/Views/search_page.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../controllers/search_page_controller.dart'; // Import du contrôleur
+import '../models/plat.dart'; // Import du modèle
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -10,6 +13,15 @@ class SearchPage extends StatefulWidget {
 
 class _SearchPageState extends State<SearchPage> {
   bool _showFilters = false;
+  
+  // AJOUT : Contrôleur pour le champ de texte
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +68,12 @@ class _SearchPageState extends State<SearchPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
+              controller: _searchController, // AJOUT : Connexion au contrôleur de texte
+              onChanged: (value) {
+                // AJOUT : Appel de la recherche dynamique
+                context.read<SearchPageController>().search(value);
+                setState(() {}); // Rafraichir pour basculer entre suggestions et résultats
+              },
               decoration: InputDecoration(
                 hintText: 'Une recette, des ingrédients...',
                 prefixIcon: const Icon(Icons.search, color: Colors.grey),
@@ -73,37 +91,93 @@ class _SearchPageState extends State<SearchPage> {
 
           const SizedBox(height: 16),
 
-          // === FILTRE AVANCÉ OU GRILLE ===
+          // === FILTRE AVANCÉ OU GRILLE DYNAMIQUE ===
           if (_showFilters)
             _buildAdvancedFilters()
           else
+            // AJOUT : Consumer pour écouter les résultats de la recherche
             Expanded(
-              child: Column(
-                children: [
-                  const Text('OU', style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 20),
+              child: Consumer<SearchPageController>(
+                builder: (context, controller, child) {
+                  
+                  // 1. CAS CHARGEMENT
+                  if (controller.isLoading) {
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF6B8E23)));
+                  }
 
-                  // ← GRILLE CORRIGÉE : un seul Expanded ici
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: GridView.count(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 16,
-                        mainAxisSpacing: 16,
-                        childAspectRatio: 1.55,
-                        children: const [
-                          _SuggestionCard(title: "Crêpes sucrées parfait", difficulty: "Facile"),
-                          _SuggestionCard(title: "Tiramisu traditionnel", difficulty: "Difficile"),
-                          _SuggestionCard(title: "Lasagnes végétales", difficulty: "Moyen"),
-                          _SuggestionCard(title: "Smoothie détox vert", difficulty: "Facile"),
-                          _SuggestionCard(title: "Brioche feuilletée", difficulty: "Difficile"),
-                          _SuggestionCard(title: "Bowl de quinoa épicé", difficulty: "Facile"),
+                  // 2. CAS RECHERCHE VIDE -> AFFICHER VOTRE CONTENU ORIGINAL (Suggestions)
+                  if (_searchController.text.isEmpty) {
+                    return Column(
+                      children: [
+                        const Text('Suggestions', style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: GridView.count(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 1.55,
+                              // VOS CARTES STATIQUES ORIGINALES
+                              children: const [
+                                _SuggestionCard(title: "Crêpes sucrées parfait", difficulty: "Facile"),
+                                _SuggestionCard(title: "Tiramisu traditionnel", difficulty: "Difficile"),
+                                _SuggestionCard(title: "Lasagnes végétales", difficulty: "Moyen"),
+                                _SuggestionCard(title: "Smoothie détox vert", difficulty: "Facile"),
+                                _SuggestionCard(title: "Brioche feuilletée", difficulty: "Difficile"),
+                                _SuggestionCard(title: "Bowl de quinoa épicé", difficulty: "Facile"),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  // 3. CAS AUCUN RÉSULTAT TROUVÉ
+                  if (controller.results.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 64, color: Colors.black26),
+                          SizedBox(height: 10),
+                          Text("Aucune recette trouvée", style: TextStyle(color: Colors.black45)),
                         ],
                       ),
-                    ),
-                  ),
-                ],
+                    );
+                  }
+
+                  // 4. CAS RÉSULTATS DYNAMIQUES (Base de données)
+                  return Column(
+                    children: [
+                      Text('${controller.results.length} résultats trouvés', style: const TextStyle(color: Colors.black54, fontSize: 14)),
+                      const SizedBox(height: 10),
+                      Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: GridView.builder(
+                            itemCount: controller.results.length,
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 1.55,
+                            ),
+                            itemBuilder: (context, index) {
+                              final Plat plat = controller.results[index];
+                              return _SuggestionCard(
+                                title: plat.title ?? "Nom inconnu",
+                                difficulty: plat.level ?? "Moyen",
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
         ],
@@ -111,7 +185,7 @@ class _SearchPageState extends State<SearchPage> {
     );
   }
 
-  // Filtres avancés – sans overflow
+  // Filtres avancés – sans overflow (VOTRE CODE ORIGINAL CONSERVÉ)
   Widget _buildAdvancedFilters() {
     return Expanded(
       child: Container(
@@ -210,18 +284,19 @@ class _SearchPageState extends State<SearchPage> {
 }
 
 // Widget pour les cartes de suggestion avec fond clair + goutte difficulté
+// (VOTRE CODE ORIGINAL CONSERVÉ)
 class _SuggestionCard extends StatelessWidget {
   final String title;
   final String difficulty;
   const _SuggestionCard({required this.title, required this.difficulty});
 
   Color _getColor() {
-    switch (difficulty) {
-      case "Facile": return const Color(0xFF6B8E23);
-      case "Moyen": return const Color(0xFFFFB300);
-      case "Difficile": return const Color(0xFFE57373);
-      default: return const Color(0xFF6B8E23);
-    }
+    // Normalisation pour matcher les données de la DB ou statiques
+    final level = difficulty.trim().toLowerCase();
+    if (level.contains("facile")) return const Color(0xFF6B8E23);
+    if (level.contains("moyen")) return const Color(0xFFFFB300);
+    if (level.contains("difficile")) return const Color(0xFFE57373);
+    return const Color(0xFF6B8E23);
   }
 
   @override
@@ -239,7 +314,12 @@ class _SuggestionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)),
+            Text(
+              title, 
+              maxLines: 2, 
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)
+            ),
             const SizedBox(height: 10),
             Row(
               children: [
