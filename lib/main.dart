@@ -6,6 +6,8 @@ import 'Views/infos_plat.dart';
 import 'database/database_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'repositories/plat_repository.dart';
+import 'package:provider/provider.dart';
+import 'controllers/home_page_controller.dart';
 
 void main() async {
   // Nécessaire pour utiliser du code async avant runApp()
@@ -77,12 +79,15 @@ class _MainNavigatorState extends State<MainNavigator> {
   // Index de la page active dans la bottom navigation
   int currentIndex = 0;
 
-  // Liste des pages affichées
   final List<Widget> pages = [
-    const HomePage(),
-    const SearchPage(),
-    const FavoritesPage(),
+  ChangeNotifierProvider(
+    create: (_) => HomePageController(),
+    child: const HomePage(),
+  ),
+  const SearchPage(),
+  const FavoritesPage(),
   ];
+
 
   @override
   Widget build(BuildContext context) {
