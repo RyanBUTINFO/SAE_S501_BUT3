@@ -4,14 +4,17 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:sembast/sembast.dart';
 import 'dart:math';
 
+
 class PlatRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
+
 
   /// Récupère les meilleurs plats selon l'origine
   Future<List<Plat>> getTopPlatsByOrigine(String origine, {int limit = 10}) async {
     if (kIsWeb) {
       final store = intMapStoreFactory.store('plats');
       final snapshot = await store.find(_dbHelper.sembastDb!);
+
 
       return snapshot
           .map((record) => Plat.fromMap(record.value))
@@ -32,6 +35,7 @@ class PlatRepository {
     }
   }
 
+
   /// Récupère des plats aléatoires
   Future<List<Plat>> getRandomPlats({int limit = 10}) async {
     if (kIsWeb) {
@@ -40,22 +44,24 @@ class PlatRepository {
       final snapshot = await store.find(_dbHelper.sembastDb!);
       
       final random = Random();
-      // On crée une copie de la liste pour la mélanger
       final shuffledSnapshot = List.of(snapshot)..shuffle(random);
+
 
       return shuffledSnapshot
           .take(limit)
           .map((record) => Plat.fromMap(record.value))
           .toList();
     } else {
-      // MOBILE: Optimisation via SQL (ORDER BY RANDOM)
+      // MOBILE: Récupération et mélange en mémoire pour personnalisation
       final db = _dbHelper.sqfliteDb!;
       final result = await db.query('plats');
       final random = Random();
       final shuffled = List.of(result)..shuffle(random);
 
+
       return shuffled.take(limit).map((e) {
         final plat = Plat.fromMap(e);
+
 
         // Création des attributs personnalisés
         plat.image = plat.imagePath;          // image
@@ -63,19 +69,24 @@ class PlatRepository {
         plat.level = plat.type;                 // level
         plat.context = plat.instructionsText;  // context
 
-      return result.map((e) => Plat.fromMap(e)).toList();
+        return plat; // ← AJOUTÉ ICI
+      }).toList();
     }
   }
+
 
   /// Recherche des plats par nom (contient le texte, insensible à la casse)
   Future<List<Plat>> searchPlatsByName(String query, {int limit = 10}) async {
     if (query.isEmpty) return [];
 
+
     final lowerQuery = query.toLowerCase();
+
 
     if (kIsWeb) {
       final store = intMapStoreFactory.store('plats');
       final snapshot = await store.find(_dbHelper.sembastDb!);
+
 
       return snapshot
           .map((record) => Plat.fromMap(record.value))
@@ -93,6 +104,7 @@ class PlatRepository {
         whereArgs: ['%$query%'],
         limit: limit,
       );
+
 
       return result.map((e) => Plat.fromMap(e)).toList();
     }
