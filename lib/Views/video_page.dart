@@ -7,50 +7,12 @@ class VideoPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Vidéo de démonstration',
-              style: TextStyle(
-                color: Color(0xFF6B8E23),
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 24),
-            GestureDetector(
-              onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Lecture du tutoriel vidéo...")),
-                );
-              },
-              child: Container(
-                width: 350,
-                height: 200,
-                decoration: BoxDecoration(
-                  color: Color(0xFF232A32),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.play_circle_outline,
-                    color: Color(0xFF6B8E23),
-                    size: 64,
-                  ),
-                ),
-              ),
-            ),
-            SizedBox(height: 20),
-            Text(
-              "La vidéo vous montre comment rechercher des recettes, utiliser les filtres et sauvegarder vos favoris",
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.black54),
-            ),
-          ],
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Color(0xFF6B8E23)),
+          onPressed: () => Navigator.pop(context),
         ),
       ),
-    );
-  }
-}
+      
