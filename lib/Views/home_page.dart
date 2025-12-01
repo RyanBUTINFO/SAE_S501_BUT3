@@ -133,54 +133,44 @@ class _HomePageState extends State<HomePage> {
                 
                 // A. SÉLECTEUR DE MODE
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)
-                      ],
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                    child: Row(
-                      children: [
-                        _buildModeButton(
-                          label: 'Mode découverte',
-                          onPressed: () {
-                            // Action : Demander au contrôleur de recharger de nouvelles données aléatoires
-                            controller.loadRandomPlats();
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _buildModeButton(
-                          label: 'Mode recommandation',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder: (context, animation, secondaryAnimation) => const RecommendationPage(),
-                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                                  const begin = Offset(1.0, 0.0);
-                                  const end = Offset.zero;
-                                  const curve = Curves.ease;
-                                  
-                                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-                                  var offsetAnimation = animation.drive(tween);
-                                  return SlideTransition(
-                                    position: offsetAnimation,
-                                    child: child,
-                                    );
-                                    },
-                                    transitionDuration: const Duration(milliseconds: 400),
-                                    ),
-                                  );
-                                  },
-                                  ),
-                      ],
-                    ),
-                  ),
-                ),
+  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+  child: Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)],
+    ),
+    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+    child: Row(
+      children: [
+        _buildModeButton(
+          label: 'Mode découverte',
+          isActive: true,  // Vert ici
+          onPressed: () => controller.loadRandomPlats(),
+        ),
+        const SizedBox(width: 8),
+        _buildModeButton(
+          label: 'Mode recommandation',
+          isActive: false,
+          onPressed: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (_, __, ___) => const RecommendationPage(),
+                transitionsBuilder: (_, animation, __, child) {
+                  return SlideTransition(
+                    position: animation.drive(Tween(begin: const Offset(1.0, 0.0), end: Offset.zero).chain(CurveTween(curve: Curves.easeInOut))),
+                    child: child,
+                  );
+                },
+              ),
+            );
+          },
+        ),
+      ],
+    ),
+  ),
+),
                 
                 // B. CARROUSEL (Partie supérieure)
                 Padding(
@@ -289,42 +279,37 @@ class _HomePageState extends State<HomePage> {
 
   /// Crée un bouton de mode (Découverte/Recommandation).
   /// [IMPORTANT] : Utilise `mouseCursor` pour forcer le curseur "Main" au survol.
-  Widget _buildModeButton({required String label, required VoidCallback onPressed}) {
-    return Expanded(
-      child: StatefulBuilder(
-        builder: (context, setState) {
-          double opacity = 1.0;
-          return GestureDetector(
-            // Animation d'opacité au clic
-            onTapDown: (_) => setState(() => opacity = 0.7),
-            onTapUp: (_) => setState(() => opacity = 1.0),
-            onTapCancel: () => setState(() => opacity = 1.0),
-            child: Opacity(
-              opacity: opacity,
-              child: ElevatedButton(
-                onPressed: onPressed,
-                style: ElevatedButton.styleFrom(
-                  elevation: 0,
-                  backgroundColor: const Color(0xFFE5EBE0),
-                  foregroundColor: const Color(0xFF6B8E23),
-                  shape: const StadiumBorder(),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ).copyWith(
-                  // C'est ici que l'on force le curseur en forme de main
-                  mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
-                ),
-                child: Text(
-                  label,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13),
-                ),
+ Widget _buildModeButton({required String label, required bool isActive, required VoidCallback onPressed}) {
+  return Expanded(
+    child: StatefulBuilder(
+      builder: (context, setState) {
+        double opacity = 1.0;
+        return GestureDetector(
+          onTapDown: (_) => setState(() => opacity = 0.7),
+          onTapUp: (_) => setState(() => opacity = 1.0),
+          onTapCancel: () => setState(() => opacity = 1.0),
+          child: Opacity(
+            opacity: opacity,
+            child: ElevatedButton(
+              onPressed: onPressed,
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                backgroundColor: isActive ? const Color(0xFF6B8E23) : const Color(0xFFE5EBE0),
+                foregroundColor: isActive ? Colors.white : const Color(0xFF6B8E23),
+                shape: const StadiumBorder(),
+                padding: const EdgeInsets.symmetric(vertical: 13),
+              ).copyWith(mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click)),
+              child: Text(
+                label,
+                style: TextStyle(fontSize: 13, fontWeight: isActive ? FontWeight.bold : FontWeight.normal),
               ),
             ),
-          );
-        },
-      ),
-    );
-  }
+          ),
+        );
+      },
+    ),
+  );
+}
 
   /// Affiche le menu "Paramètres" en bas de l'écran
   void _showSettingsMenu(BuildContext context) {
