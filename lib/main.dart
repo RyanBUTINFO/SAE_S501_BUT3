@@ -9,12 +9,16 @@ import 'Views/favorites_page.dart';
 import 'Views/infos_plat.dart';
 import 'Views/splash_screen.dart';
 import 'Views/tutorial_page.dart';
+import 'Views/recommendation_page.dart'; 
+import 'Views/preferences_alimentaires_page.dart';         // AJOUTÉ (nécessaire)
+
 
 // --- IMPORTS DATA & CONTROLLERS ---
 import 'database/database_helper.dart';
 import 'repositories/plat_repository.dart';
 import 'controllers/home_page_controller.dart';
 import 'controllers/search_page_controller.dart';
+import 'controllers/recommendation_controller.dart'; // AJOUTÉ (le contrôleur manquant)
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,6 +63,7 @@ class MiaamApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => HomePageController()),
         ChangeNotifierProvider(create: (_) => SearchPageController()),
+        ChangeNotifierProvider(create: (_) => RecommendationController()), // AJOUTÉ 
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -76,6 +81,8 @@ class MiaamApp extends StatelessWidget {
           '/tutorial': (context) => const TutorialPage(),
           '/main': (context) => const MainNavigator(),
           '/infos_plat': (context) => const RecipePage(),
+          '/recommendation': (context) => const RecommendationPage(), // AJOUTÉ
+          '/preferences_alimentaires': (context) => const PreferencesAlimentairesPage(), 
         },
       ),
     );
