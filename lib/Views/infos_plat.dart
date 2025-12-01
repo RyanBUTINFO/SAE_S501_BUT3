@@ -63,7 +63,7 @@ class RecipePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: <Widget>[
           // L'en-tête de la page
-          _buildSliverAppBar(),
+          _buildSliverAppBar(context),
 
           // Contenu principal sous l'en-tête
           SliverList(
