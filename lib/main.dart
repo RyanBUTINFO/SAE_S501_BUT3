@@ -9,7 +9,8 @@ import 'Views/favorites_page.dart';
 import 'Views/infos_plat.dart';
 import 'Views/splash_screen.dart';
 import 'Views/tutorial_page.dart';
-import 'Views/recommendation_page.dart';          // AJOUTÉ (nécessaire)
+import 'Views/recommendation_page.dart'; 
+import 'Views/preferences_alimentaires_page.dart';         // AJOUTÉ (nécessaire)
 
 
 // --- IMPORTS DATA & CONTROLLERS ---
@@ -80,7 +81,8 @@ class MiaamApp extends StatelessWidget {
           '/tutorial': (context) => const TutorialPage(),
           '/main': (context) => const MainNavigator(),
           '/infos_plat': (context) => const RecipePage(),
-          '/recommendation': (context) => const RecommendationPage(), // AJOUTÉ 
+          '/recommendation': (context) => const RecommendationPage(), // AJOUTÉ
+          '/preferences_alimentaires': (context) => const PreferencesAlimentairesPage(), 
         },
       ),
     );
