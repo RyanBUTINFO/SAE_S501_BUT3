@@ -185,7 +185,7 @@ class RecipePage extends StatelessWidget {
 
 
   // En-tête de la page (SliverAppBar)
-  Widget _buildSliverAppBar() {
+  Widget _buildSliverAppBar(BuildContext context) {
     // Changement de la couleur de fond de la barre d'application en Vert Kaki
     return SliverAppBar(
       backgroundColor: _kAppPrimaryColor.withOpacity(0.9), // Vert Kaki
