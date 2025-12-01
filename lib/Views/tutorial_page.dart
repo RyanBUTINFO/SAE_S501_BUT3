@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'video_page.dart';
-import 'home_page.dart';
 
 class TutorialPage extends StatelessWidget {
   const TutorialPage({super.key});
@@ -97,10 +96,8 @@ class TutorialPage extends StatelessWidget {
               const SizedBox(height: 40),
               OutlinedButton(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  );
+                  // ✅ LIGNE MODIFIÉE ICI
+                  Navigator.pushReplacementNamed(context, '/home');
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF6B8E23)),

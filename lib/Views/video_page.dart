@@ -25,7 +25,6 @@ class VideoPage extends StatelessWidget {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text("Lecture du tutoriel vidéo...")),
                 );
-                // À remplacer plus tard par un vrai lecteur vidéo
               },
               child: Container(
                 width: 350,

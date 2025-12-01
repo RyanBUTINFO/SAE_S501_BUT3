@@ -62,10 +62,10 @@ class PlatRepository {
         final plat = Plat.fromMap(e);
 
         // Création des attributs personnalisés
-        plat.image = plat.imagePath;;          // image
+        plat.image = plat.imagePath;          // image
         plat.title = plat.nom;                  // title
         plat.level = plat.type;                 // level
-        plat.context = plat.instructionsText;;  // context
+        plat.context = plat.instructionsText;  // context
 
         return plat;
       }).toList();
