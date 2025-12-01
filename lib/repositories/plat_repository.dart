@@ -50,11 +50,18 @@ class PlatRepository {
     } else {
       // MOBILE: Optimisation via SQL (ORDER BY RANDOM)
       final db = _dbHelper.sqfliteDb!;
-      final result = await db.query(
-        'plats',
-        orderBy: 'RANDOM()', 
-        limit: limit,
-      );
+      final result = await db.query('plats');
+      final random = Random();
+      final shuffled = List.of(result)..shuffle(random);
+
+      return shuffled.take(limit).map((e) {
+        final plat = Plat.fromMap(e);
+
+        // Création des attributs personnalisés
+        plat.image = plat.imagePath;          // image
+        plat.title = plat.nom;                  // title
+        plat.level = plat.type;                 // level
+        plat.context = plat.instructionsText;  // context
 
       return result.map((e) => Plat.fromMap(e)).toList();
     }

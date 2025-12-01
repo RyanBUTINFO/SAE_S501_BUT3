@@ -7,24 +7,21 @@ import 'Views/home_page.dart';
 import 'Views/search_page.dart';
 import 'Views/favorites_page.dart';
 import 'Views/infos_plat.dart';
+import 'Views/splash_screen.dart';
+import 'Views/tutorial_page.dart';
 
 // --- IMPORTS DATA & CONTROLLERS ---
 import 'database/database_helper.dart';
 import 'repositories/plat_repository.dart';
 import 'controllers/home_page_controller.dart';
-import 'controllers/search_page_controller.dart'; // <--- NOUVEL IMPORT
+import 'controllers/search_page_controller.dart';
 
 void main() async {
-  // Nécessaire pour utiliser du code async avant runApp()
   WidgetsFlutterBinding.ensureInitialized();
 
-  // -------------------------------
-  // Initialisation de la base locale
-  // -------------------------------
   final dbHelper = DatabaseHelper();
   await dbHelper.initDatabase();
 
-  // Vérification debug des tables en SQLite (mobile)
   if (!kIsWeb) {
     try {
       final tables = await dbHelper.sqfliteDb!.rawQuery(
@@ -38,9 +35,6 @@ void main() async {
     print("Base Web initialisée (Sembast)");
   }
 
-  // -------------------------------
-  // Test récupération 10 plats aléatoires (Debug console)
-  // -------------------------------
   final platRepo = PlatRepository();
   try {
     final randomPlats = await platRepo.getRandomPlats(limit: 10);
@@ -53,7 +47,6 @@ void main() async {
     print("Erreur lors du test de récupération des plats : $e");
   }
 
-  // Lancement de l'application Flutter
   runApp(const MiaamApp());
 }
 
@@ -62,26 +55,29 @@ class MiaamApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-
-      // Thème général de l'application
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF6F8F4),
-        primaryColor: const Color(0xFF6B8E23), // Kaki
-        colorScheme: ColorScheme.fromSwatch().copyWith(
-          primary: const Color(0xFF6B8E23),
-          secondary: const Color(0xFFE5EBE0),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => HomePageController()),
+        ChangeNotifierProvider(create: (_) => SearchPageController()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          scaffoldBackgroundColor: const Color(0xFFF6F8F4),
+          primaryColor: const Color(0xFF6B8E23),
+          colorScheme: ColorScheme.fromSwatch().copyWith(
+            primary: const Color(0xFF6B8E23),
+            secondary: const Color(0xFFE5EBE0),
+          ),
         ),
+        initialRoute: '/splash',
+        routes: {
+          '/splash': (context) => const SplashScreen(),
+          '/tutorial': (context) => const TutorialPage(),
+          '/main': (context) => const MainNavigator(),
+          '/infos_plat': (context) => const RecipePage(),
+        },
       ),
-
-      // Page principale = navigation avec bottom bar
-      home: const MainNavigator(),
-
-      // Déclaration des routes globales
-      routes: {
-        '/infos_plat': (context) => const RecipePage(), // Page infos d’un plat
-      },
     );
   }
 }
@@ -94,63 +90,46 @@ class MainNavigator extends StatefulWidget {
 }
 
 class _MainNavigatorState extends State<MainNavigator> {
-  // Index de la page active dans la bottom navigation
   int currentIndex = 0;
 
-  // Liste des pages avec leurs contrôleurs respectifs injectés via Provider
-  final List<Widget> pages = [
-    // 1. Page Accueil avec son contrôleur
-    ChangeNotifierProvider(
-      create: (_) => HomePageController(),
-      child: const HomePage(),
-    ),
-    
-    // 2. Page Recherche avec son contrôleur (AJOUTÉ ICI)
-    ChangeNotifierProvider(
-      create: (_) => SearchPageController(),
-      child: const SearchPage(),
-    ),
-    
-    // 3. Page Favoris (Pas de contrôleur pour l'instant)
-    const FavoritesPage(),
-  ];
+  late final List<Widget> pages;
+
+  @override
+  void initState() {
+    super.initState();
+    pages = [
+      const HomePage(),
+      const SearchPage(),
+      const FavoritesPage(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IndexedStack = garde l'état des pages (scroll, champs, etc.) quand on change d'onglet
       body: IndexedStack(
         index: currentIndex,
         children: pages,
       ),
-
-      // Barre de navigation du bas
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
               color: Colors.black12,
-              blurRadius: 6, // Petite ombre élégante
+              blurRadius: 6,
             ),
           ],
         ),
-
         child: BottomNavigationBar(
           currentIndex: currentIndex,
-          type: BottomNavigationBarType.fixed, // Évite l'animation "shifting" si > 3 items
+          type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          elevation: 0, // On gère l'ombre avec le Container au-dessus
-
-          // Couleurs des icônes sélectionnées / non sélectionnées
+          elevation: 0,
           selectedItemColor: const Color(0xFF6B8E23),
           unselectedItemColor: Colors.black38,
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-
-          // Changement d'onglet
           onTap: (i) => setState(() => currentIndex = i),
-
-          // Items de la navigation
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
             BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Rechercher'),

@@ -292,7 +292,7 @@ class _HomePageState extends State<HomePage> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ).copyWith(
                   // C'est ici que l'on force le curseur en forme de main
-                  mouseCursor: MaterialStateProperty.all(SystemMouseCursors.click),
+                  mouseCursor: WidgetStateProperty.all(SystemMouseCursors.click),
                 ),
                 child: Text(
                   label,

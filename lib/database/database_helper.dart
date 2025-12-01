@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
-import 'package:sembast/sembast.dart';
 import 'package:sembast_web/sembast_web.dart';
 
 class DatabaseHelper {

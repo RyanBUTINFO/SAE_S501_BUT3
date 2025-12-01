@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+
 // --- Définitions des Couleurs et Données (Rendus accessibles globalement) ---
+
 
 // Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info et la bannière
 const Color _kAppPrimaryColor = Color(0xFF6B8E23); 
 // ANCIENNE COULEUR BANNIERE SUPPRIMÉE : const Color _kBannerColor = Color(0xFFF09855); 
 const Color _kAccentColor = Color(0xFFEA4C46); // Rouge des boutons et étoiles
 const Color _kBackgroundColor = Color(0xFFFAF6F0); // Couleur de fond très claire
+
 
 // Liste des ingrédients (pour la GridView)
 final List<Map<String, dynamic>> _ingredients = const [
@@ -18,6 +21,7 @@ final List<Map<String, dynamic>> _ingredients = const [
   {'name': '1 càs Crème fraîche', 'icon': Icons.local_cafe},
   {'name': '1 pinc. Herbes de Provence', 'icon': Icons.grass},
 ];
+
 
 // Liste des étapes de la recette (pour la ListView)
 final List<String> _steps = const [
@@ -31,6 +35,7 @@ final List<String> _steps = const [
   "Servez les pâtes crémeuses au poulet, champignons & épinards...",
 ];
 
+
 // Données nutritionnelles pour la tuile dépliable
 final List<Map<String, String>> _nutritionalValues = const [
   {'name': 'Calories', 'value': '436 kcal'},
@@ -39,6 +44,7 @@ final List<Map<String, String>> _nutritionalValues = const [
   {'name': 'Fibres', 'value': '1 g'},
   {'name': 'Sodium', 'value': '735 mg'},
 ];
+
 
 // Liste des ustensiles pour la nouvelle section dépliable
 final List<String> _utensils = const [
@@ -51,10 +57,13 @@ final List<String> _utensils = const [
 ];
 
 
+
 // --- Classe Principale ---
+
 
 class RecipePage extends StatelessWidget {
   const RecipePage({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +72,8 @@ class RecipePage extends StatelessWidget {
       body: CustomScrollView(
         slivers: <Widget>[
           // L'en-tête de la page
-          _buildSliverAppBar(),
+          _buildSliverAppBar(context), // ← AJOUT DU CONTEXT ICI
+
 
           // Contenu principal sous l'en-tête
           SliverList(
@@ -72,9 +82,11 @@ class RecipePage extends StatelessWidget {
                 _buildIntroSection(context),
                 const SizedBox(height: 20),
 
+
                 // Section Info (Préparation/Cuisson/Calories) - En vert kaki
                 _buildInfoSection(context),
                 const SizedBox(height: 20),
+
 
                 // Titre Ingrédients centré
                 Center(
@@ -88,8 +100,10 @@ class RecipePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
+
                 _buildIngredientsSection(),
                 const SizedBox(height: 20),
+
 
                 // Titre Recette centré
                 Center(
@@ -103,8 +117,10 @@ class RecipePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
+
                 _buildStepsSection(),
                 const SizedBox(height: 20),
+
 
                 // Section repliable : Valeurs nutritionnelles
                 _buildExpandableSection(
@@ -126,15 +142,16 @@ class RecipePage extends StatelessWidget {
                 ),
                 const Divider(height: 0),
 
+
                 const SizedBox(height: 100),
               ],
             ),
           ),
         ],
       ),
-      // bottomSheet a été supprimé
     );
   }
+
 
   // Widget pour afficher les détails nutritionnels
   Widget _buildNutritionalDetails() {
@@ -170,7 +187,6 @@ class RecipePage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: _utensils.map((utensil) {
-          // Utilisation d'un widget simple pour l'alignement et le saut de ligne
           return Padding(
             padding: const EdgeInsets.only(bottom: 4.0),
             child: Text(
@@ -184,30 +200,27 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // En-tête de la page (SliverAppBar)
-  Widget _buildSliverAppBar() {
-    // Changement de la couleur de fond de la barre d'application en Vert Kaki
+
+  // En-tête de la page (SliverAppBar) - CORRIGÉ AVEC CONTEXT
+  Widget _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
-      backgroundColor: _kAppPrimaryColor.withOpacity(0.9), // Vert Kaki
+      backgroundColor: _kAppPrimaryColor.withOpacity(0.9),
       expandedHeight: 400.0,
       pinned: true,
-      
-      // La zone 'leading' est retirée ici pour pouvoir gérer les icônes dans le FlexibleSpaceBar
       leading: null, 
-      automaticallyImplyLeading: false, // Important pour ignorer le bouton de retour par défaut
+      automaticallyImplyLeading: false,
       
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: true,
         titlePadding: const EdgeInsets.only(bottom: 10.0),
         title: const SizedBox.shrink(),
-        background: Stack( // Utilisation d'un Stack pour positionner le cœur sur l'image
+        background: Stack(
           fit: StackFit.expand,
           children: [
-            // 1. L'image de la recette (en fond du Stack)
+            // 1. L'image de la recette
             Image.asset(
               'assets/images_plats/poulet_pate_cremeuse.jpg',
-              fit: BoxFit.cover, // S'assure que l'image couvre tout l'espace disponible
-              // Placeholder si l'image n'existe pas
+              fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
                 color: Colors.grey.shade200,
                 child: const Center(
@@ -216,27 +229,30 @@ class RecipePage extends StatelessWidget {
               ),
             ),
             
-            // 2. NOUVELLE RANGÉE pour les icônes de navigation (Croix + Cœur)
+            // 2. Rangée des icônes (Croix + Cœur)
             Positioned(
-              top: 40, // Espacement du haut pour éviter de cacher sous la barre système/AppBar
+              top: 40,
               left: 10,
               right: 10,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Icône de fermeture (Croix)
+                  // ✅ CORRECTION ICI : Bouton de fermeture fonctionnel
                   IconButton(
-                    icon: const Icon(Icons.close, color: Colors.white, size: 28), // Taille légèrement augmentée pour être similaire au cœur
-                    onPressed: () {},
+                    icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                    onPressed: () {
+                      Navigator.pop(context); // ← AJOUT DE CETTE LIGNE
+                    },
                   ),
                   
                   // Icône de favori (Cœur)
                   Tooltip(
-                    message: 'Ajouter aux favoris', // Texte affiché au survol/appui long
+                    message: 'Ajouter aux favoris',
                     child: IconButton(
-                      // Taille de l'icône réduite à 24 (était 30)
                       icon: const Icon(Icons.favorite_border, color: Colors.white, size: 28), 
-                      onPressed: () {},
+                      onPressed: () {
+                        // TODO: Logique pour ajouter aux favoris
+                      },
                     ),
                   ),
                 ],
@@ -248,14 +264,13 @@ class RecipePage extends StatelessWidget {
     );
   }
 
+
   // Section d'introduction (Titre, Eco-Score, Empreinte Carbone, Origine)
   Widget _buildIntroSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
-          // SUPPRIMÉ : Étoiles et '18 notes'
-
           // Titre principal
           Text(
             'Pâtes crémeuses au poulet, champignons & épinards',
@@ -276,50 +291,47 @@ class RecipePage extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // NOUVELLE RANGÉE D'INDICATEURS
+
+          // Rangée d'indicateurs
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              // 1. Eco-Score (Nouveau)
               const _DataPill(
-                value: 'A', // Valeur de l'Eco-Score
+                value: 'A',
                 label: 'Eco-Score', 
-                color: Color(0xFFC8E6C9), // Vert clair
+                color: Color(0xFFC8E6C9),
               ),
               
-              // 2. Empreinte Carbone (Déjà existant)
               const _DataPill(
                 value: '1.2 kg CO2eq', 
                 label: 'Empreinte Carbone', 
-                color: Color(0xFFF0F4C3), // Jaune très clair pour différencier
+                color: Color(0xFFF0F4C3),
               ),
               
-              // 3. Origine (Déjà existant)
               const _DataPill(
                 value: 'Italien', 
                 label: 'Origine', 
-                color: Color(0xFFE1BEE7), // Mauve très clair pour différencier
+                color: Color(0xFFE1BEE7),
               ),
             ],
           ),
           const SizedBox(height: 10),
           
-          // SUPPRIMÉ : Section Partage
           const Divider(),
         ],
       ),
     );
   }
 
+
   // Section Préparation/Cuisson/Calories - En Vert Kaki
   Widget _buildInfoSection(BuildContext context) {
     return Container(
-      color: _kAppPrimaryColor.withOpacity(0.9), // Vert Kaki
+      color: _kAppPrimaryColor.withOpacity(0.9),
       padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          // Icône changée en couteau/couverts (Icons.restaurant)
           _TimePill(icon: Icons.restaurant, time: '5 minutes', label: 'Préparation'),
           _TimePill(icon: Icons.timer, time: '12 minutes', label: 'Cuisson'),
           _TimePill(icon: Icons.local_fire_department, time: '751 kcal', label: 'Par portion'),
@@ -327,6 +339,7 @@ class RecipePage extends StatelessWidget {
       ),
     );
   }
+
 
   // Section des ingrédients (GridView)
   Widget _buildIngredientsSection() {
@@ -351,7 +364,6 @@ class RecipePage extends StatelessWidget {
                     Icon(Icons.people_alt, size: 18),
                     SizedBox(width: 5),
                     Text('1', style: TextStyle(fontWeight: FontWeight.bold)),
-                    // La flèche déroulante a été supprimée ici
                   ],
                 ),
               ),
@@ -380,9 +392,9 @@ class RecipePage extends StatelessWidget {
     );
   }
 
+
   // Section des étapes de la recette (ListView)
   Widget _buildStepsSection() {
-    // Retrait de l'ancien titre ici, il est géré dans le SliverList pour le centrage
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
       child: ListView.builder(
@@ -391,6 +403,7 @@ class RecipePage extends StatelessWidget {
         itemCount: _steps.length,
         itemBuilder: (context, index) {
           final iconData = index < _ingredients.length ? _ingredients[index]['icon'] : null;
+
 
           return _RecipeStep(
             stepNumber: index + 1,
@@ -401,6 +414,7 @@ class RecipePage extends StatelessWidget {
       ),
     );
   }
+
 
   // Section repliable générique
   Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget, Widget content) {
@@ -423,20 +437,21 @@ class RecipePage extends StatelessWidget {
   }
 }
 
+
 // --- Widgets de support ---
 
-// Pilule pour Temps/Info (Préparation, Cuisson, Par portion)
+
 class _TimePill extends StatelessWidget {
   final IconData icon;
   final String time;
   final String label;
 
+
   const _TimePill({required this.icon, required this.time, required this.label});
+
 
   @override
   Widget build(BuildContext context) {
-    // Les icônes et le texte de cette section sont déjà noirs, ils seront bien visibles
-    // sur le fond Vert Kaki.
     return Column(
       children: [
         Icon(icon, color: Colors.black, size: 28),
@@ -448,19 +463,21 @@ class _TimePill extends StatelessWidget {
   }
 }
 
-// Pilule pour Data (Eco-Score, Empreinte Carbone, Origine)
+
 class _DataPill extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
 
+
   const _DataPill({required this.value, required this.label, required this.color});
+
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 95, // Largeur ajustée
-      height: 45, // Hauteur ajustée
+      width: 95,
+      height: 45,
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(8),
@@ -492,11 +509,14 @@ class _DataPill extends StatelessWidget {
   }
 }
 
+
 class _IngredientItem extends StatelessWidget {
   final String name;
   final IconData icon;
 
+
   const _IngredientItem({required this.name, required this.icon});
+
 
   @override
   Widget build(BuildContext context) {
@@ -518,12 +538,15 @@ class _IngredientItem extends StatelessWidget {
   }
 }
 
+
 class _RecipeStep extends StatelessWidget {
   final int stepNumber;
   final String text;
   final IconData? icon;
 
+
   const _RecipeStep({required this.stepNumber, required this.text, this.icon});
+
 
   @override
   Widget build(BuildContext context) {
