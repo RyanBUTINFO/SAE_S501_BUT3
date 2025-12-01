@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 // --- IMPORTS DU PROJET ---
 import 'search_page.dart';     
 import 'favorites_page.dart'; 
+import 'recommendation_page.dart';
 import '../controllers/home_page_controller.dart'; 
 // Note: On n'importe PAS le Repository ni le Modèle ici. 
 // La Vue ne parle qu'au Contrôleur.
@@ -155,9 +156,27 @@ class _HomePageState extends State<HomePage> {
                         _buildModeButton(
                           label: 'Mode recommandation',
                           onPressed: () {
-                            // TODO: Implémenter la logique future pour les recommandations
-                          },
-                        ),
+                            Navigator.push(
+                              context,
+                              PageRouteBuilder(
+                                pageBuilder: (context, animation, secondaryAnimation) => const RecommendationPage(),
+                                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                  const begin = Offset(1.0, 0.0);
+                                  const end = Offset.zero;
+                                  const curve = Curves.ease;
+                                  
+                                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+                                  var offsetAnimation = animation.drive(tween);
+                                  return SlideTransition(
+                                    position: offsetAnimation,
+                                    child: child,
+                                    );
+                                    },
+                                    transitionDuration: const Duration(milliseconds: 400),
+                                    ),
+                                  );
+                                  },
+                                  ),
                       ],
                     ),
                   ),
