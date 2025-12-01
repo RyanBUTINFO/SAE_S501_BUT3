@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'search_page.dart';     
 import 'favorites_page.dart'; 
 import 'recommendation_page.dart';
+import 'preferences_alimentaires_page.dart';
 import '../controllers/home_page_controller.dart'; 
 // Note: On n'importe PAS le Repository ni le Modèle ici. 
 // La Vue ne parle qu'au Contrôleur.
@@ -312,89 +313,82 @@ class _HomePageState extends State<HomePage> {
 }
 
   /// Affiche le menu "Paramètres" en bas de l'écran
-  void _showSettingsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+void _showSettingsMenu(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => Container(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.settings, color: Color(0xFF6B8E23), size: 28),
+                SizedBox(width: 10),
+                Text('Paramètres', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF6B8E23))),
+              ],
+            ),
+          ),
+          const Divider(),
+
+          // Préférences alimentaires → ouvre la vraie page
+          ListTile(
+            leading: const Icon(Icons.restaurant_menu, color: Color(0xFF6B8E23)),
+            title: const Text('Préférences alimentaires'),
+            trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+            onTap: () {
+              Navigator.pop(context); // ferme le BottomSheet
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PreferencesAlimentairesPage()),
+              );
+            },
+          ),
+
+          // Les autres options (tu peux les garder ou les virer)
+          ListTile(
+            leading: const Icon(Icons.notifications_outlined, color: Color(0xFF6B8E23)),
+            title: const Text('Notifications'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.language, color: Color(0xFF6B8E23)),
+            title: const Text('Langue'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.help_outline, color: Color(0xFF6B8E23)),
+            title: const Text('Aide & Support'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.info_outline, color: Color(0xFF6B8E23)),
+            title: const Text('À propos'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () {
+              Navigator.pop(context);
+              showAboutDialog(
+                context: context,
+                applicationName: 'Miaam',
+                applicationVersion: '1.0.0',
+                children: const [Text("L’app qui te trouve la recette parfaite")],
+              );
+            },
+          ),
+        ],
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // En-tête
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                children: const [
-                  Icon(Icons.settings, color: Color(0xFF6B8E23), size: 28),
-                  SizedBox(width: 10),
-                  Text(
-                    'Paramètres',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF6B8E23)),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-            // Liste des options
-            ListTile(
-              leading: const Icon(Icons.notifications_outlined, color: Color(0xFF6B8E23)),
-              title: const Text('Notifications'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.restaurant_menu, color: Color(0xFF6B8E23)),
-              title: const Text('Préférences alimentaires'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () => Navigator.pop(context),
-            ),
-             ListTile(
-              leading: const Icon(Icons.language, color: Color(0xFF6B8E23)),
-              title: const Text('Langue'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () => Navigator.pop(context),
-            ),
-             ListTile(
-              leading: const Icon(Icons.help_outline, color: Color(0xFF6B8E23)),
-              title: const Text('Aide & Support'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () => Navigator.pop(context),
-            ),
-            // Option À propos (Ouvre une boîte de dialogue native)
-            ListTile(
-              leading: const Icon(Icons.info_outline, color: Color(0xFF6B8E23)),
-              title: const Text('À propos'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                Navigator.pop(context); // Fermer le menu
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'Miaam',
-                  applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2024 Miaam Inc.',
-                  applicationIcon: Image.asset(
-                    'assets/images/logo.png', 
-                    width: 40,
-                    errorBuilder: (ctx, err, stack) => const Icon(Icons.restaurant, color: Color(0xFF6B8E23)),
-                  ),
-                  children: [
-                    const Padding(
-                      padding: EdgeInsets.only(top: 15),
-                      child: Text("L'application idéale pour trouver des recettes délicieuses en un clic."),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+    ),
+  );
+}
 
   /// Design de la carte pour le Carrousel (Grande taille)
   Widget recipeCard({
