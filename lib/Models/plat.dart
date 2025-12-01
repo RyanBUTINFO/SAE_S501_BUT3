@@ -4,12 +4,12 @@ class Plat {
   final String? type;
   final String? cuisine;
   final String? origine;
-  final double? preparationTime;
-  final double? cookingTime;
+  final double? tempsPreparation;
+  final double? tempsCuisson;
   final int? nbPersonnes;
-  final int? numberOfSteps;
-  final String? instructionsText;
-  final String? cookingMethods;
+  final int? nombreEtapes;
+  final String? instructions;
+  final String? methodesCuisson;
   final String? ustensiles;
   final String? imagePath;
   final String? calories;
@@ -17,10 +17,10 @@ class Plat {
   final double? empreinteCarbone;
 
   // Attributs additionnels pour l'app
-  String? image;   // alias pour imagePath
-  String? title;   // alias pour nom
-  String? level;   // alias pour type
-  String? context; // alias pour instructionsText
+  String? image;    // alias pour imagePath
+  String? title;    // alias pour nom
+  String? level;    // alias pour type
+  String? context;  // alias pour instructions
 
   Plat({
     this.id,
@@ -28,12 +28,12 @@ class Plat {
     this.type,
     this.cuisine,
     this.origine,
-    this.preparationTime,
-    this.cookingTime,
+    this.tempsPreparation,
+    this.tempsCuisson,
     this.nbPersonnes,
-    this.numberOfSteps,
-    this.instructionsText,
-    this.cookingMethods,
+    this.nombreEtapes,
+    this.instructions,
+    this.methodesCuisson,
     this.ustensiles,
     this.imagePath,
     this.calories,
@@ -46,38 +46,54 @@ class Plat {
   });
 
   factory Plat.fromMap(Map<String, dynamic> map) {
+    // Fonction utilitaire pour convertir toute valeur en String? ou null
+    // Cela corrige l'erreur "type 'double' is not a subtype of type 'String?'"
+    String? _safeToString(dynamic value) {
+      if (value == null) return null;
+      // Si c'est déjà une String, la retourner.
+      if (value is String) return value;
+      // Si c'est un nombre (int, double, num), le convertir en String.
+      return value.toString();
+    }
+
     return Plat(
       id: map['id'] is int ? map['id'] as int : int.tryParse(map['id'].toString()),
-      nom: map['nom'] as String?,
-      type: map['type'] as String?,
-      cuisine: map['cuisine'] as String?,
-      origine: map['origine'] as String?,
-      preparationTime: (map['preparation_time'] is num)
-          ? (map['preparation_time'] as num).toDouble()
-          : double.tryParse(map['preparation_time'].toString()),
-      cookingTime: (map['cooking_time'] is num)
-          ? (map['cooking_time'] as num).toDouble()
-          : double.tryParse(map['cooking_time'].toString()),
+      nom: _safeToString(map['nom']),
+      type: _safeToString(map['type']),
+      cuisine: _safeToString(map['cuisine']),
+      origine: _safeToString(map['origine']),
+      tempsPreparation: (map['temps_preparation'] is num)
+          ? (map['temps_preparation'] as num).toDouble()
+          : double.tryParse(map['temps_preparation'].toString()),
+      tempsCuisson: (map['temps_cuisson'] is num)
+          ? (map['temps_cuisson'] as num).toDouble()
+          : double.tryParse(map['temps_cuisson'].toString()),
       nbPersonnes: map['nb_personnes'] is int
           ? map['nb_personnes'] as int
           : int.tryParse(map['nb_personnes'].toString()),
-      numberOfSteps: map['number_of_steps'] is int
-          ? map['number_of_steps'] as int
-          : int.tryParse(map['number_of_steps'].toString()),
-      instructionsText: map['instructions_text'] as String?,
-      cookingMethods: map['cooking_methods'] as String?,
-      ustensiles: map['ustensiles'] as String?,
-      imagePath: map['image_path'] as String?,
-      calories: map['Calories'] as String?,
-      valeurNutritionnelle: map['Valeur_nutritionnelle'] as String?,
+      nombreEtapes: map['nombre_etapes'] is int
+          ? map['nombre_etapes'] as int
+          : int.tryParse(map['nombre_etapes'].toString()),
+      
+      // Les champs TEXTE sont désormais convertis de manière sécurisée
+      instructions: _safeToString(map['instructions']),
+      methodesCuisson: _safeToString(map['methodes_cuisson']),
+      ustensiles: _safeToString(map['ustensiles']),
+      imagePath: _safeToString(map['image_path']),
+      
+      // Correction critique pour "double" en "String"
+      calories: _safeToString(map['calories']),
+      
+      valeurNutritionnelle: _safeToString(map['valeur_nutritionnelle']),
       empreinteCarbone: (map['empreinte_carbone'] is num)
           ? (map['empreinte_carbone'] as num).toDouble()
           : double.tryParse(map['empreinte_carbone'].toString()),
+          
       // Initialisation des alias
-      image: map['image_path'] as String?,
-      title: map['nom'] as String?,
-      level: map['type'] as String?,
-      context: map['instructions_text'] as String?,
+      image: _safeToString(map['image_path']),
+      title: _safeToString(map['nom']),
+      level: _safeToString(map['type']),
+      context: _safeToString(map['instructions']),
     );
   }
 
@@ -88,16 +104,16 @@ class Plat {
       'type': type,
       'cuisine': cuisine,
       'origine': origine,
-      'preparation_time': preparationTime,
-      'cooking_time': cookingTime,
+      'temps_preparation': tempsPreparation,
+      'temps_cuisson': tempsCuisson,
       'nb_personnes': nbPersonnes,
-      'number_of_steps': numberOfSteps,
-      'instructions_text': instructionsText,
-      'cooking_methods': cookingMethods,
+      'nombre_etapes': nombreEtapes,
+      'instructions': instructions,
+      'methodes_cuisson': methodesCuisson,
       'ustensiles': ustensiles,
       'image_path': imagePath,
-      'Calories': calories,
-      'Valeur_nutritionnelle': valeurNutritionnelle,
+      'calories': calories,
+      'valeur_nutritionnelle': valeurNutritionnelle,
       'empreinte_carbone': empreinteCarbone,
     };
   }

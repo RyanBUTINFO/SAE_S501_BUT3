@@ -24,6 +24,7 @@ class PlatRepository {
           .take(limit)
           .toList();
     } else {
+      // Utilisation de votre getter sqfliteDb!
       final db = _dbHelper.sqfliteDb!;
       final result = await db.query(
         'plats',
@@ -53,6 +54,7 @@ class PlatRepository {
           .toList();
     } else {
       // MOBILE: Récupération et mélange en mémoire pour personnalisation
+      // Utilisation de votre getter sqfliteDb!
       final db = _dbHelper.sqfliteDb!;
       final result = await db.query('plats');
       final random = Random();
@@ -63,13 +65,9 @@ class PlatRepository {
         final plat = Plat.fromMap(e);
 
 
-        // Création des attributs personnalisés
-        plat.image = plat.imagePath;          // image
-        plat.title = plat.nom;                  // title
-        plat.level = plat.type;                 // level
-        plat.context = plat.instructionsText;  // context
-
-        return plat; // ← AJOUTÉ ICI
+        // La logique redondante d'affectation des alias a été supprimée
+        // pour résoudre le problème de compilation.
+        return plat;
       }).toList();
     }
   }
@@ -97,6 +95,7 @@ class PlatRepository {
           .take(limit)
           .toList();
     } else {
+      // Utilisation de votre getter sqfliteDb!
       final db = _dbHelper.sqfliteDb!;
       final result = await db.query(
         'plats',

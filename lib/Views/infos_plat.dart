@@ -38,7 +38,7 @@ final List<String> _steps = const [
 
 // Données nutritionnelles pour la tuile dépliable
 final List<Map<String, String>> _nutritionalValues = const [
-  {'name': 'Calories', 'value': '436 kcal'},
+  {'name': 'calories', 'value': '436 kcal'},
   {'name': 'Cholesterol', 'value': '128 mg'},
   {'name': 'Protéines', 'value': '46 g'},
   {'name': 'Fibres', 'value': '1 g'},
@@ -83,7 +83,7 @@ class RecipePage extends StatelessWidget {
                 const SizedBox(height: 20),
 
 
-                // Section Info (Préparation/Cuisson/Calories) - En vert kaki
+                // Section Info (Préparation/Cuisson/calories) - En vert kaki
                 _buildInfoSection(context),
                 const SizedBox(height: 20),
 
@@ -324,7 +324,7 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // Section Préparation/Cuisson/Calories - En Vert Kaki
+  // Section Préparation/Cuisson/calories - En Vert Kaki
   Widget _buildInfoSection(BuildContext context) {
     return Container(
       color: _kAppPrimaryColor.withOpacity(0.9),
