@@ -3,7 +3,7 @@ import 'video_page.dart';
 
 class TutorialPage extends StatelessWidget {
   const TutorialPage({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,12 +43,7 @@ class TutorialPage extends StatelessWidget {
                   color: const Color(0xFFF3F6EB),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    )
-                  ],
+                    
                 ),
                 child: Column(
                   children: [
@@ -96,8 +91,7 @@ class TutorialPage extends StatelessWidget {
               const SizedBox(height: 40),
               OutlinedButton(
                 onPressed: () {
-                  // ✅ LIGNE MODIFIÉE ICI
-                  Navigator.pushReplacementNamed(context, '/home');
+                  Navigator.pushReplacementNamed(context, '/main');
                 },
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF6B8E23)),
