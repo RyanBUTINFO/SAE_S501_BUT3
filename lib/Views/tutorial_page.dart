@@ -43,7 +43,12 @@ class TutorialPage extends StatelessWidget {
                   color: const Color(0xFFF3F6EB),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
-                    
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ],
                 ),
                 child: Column(
                   children: [
