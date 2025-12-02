@@ -55,6 +55,7 @@ class SearchPageController extends ChangeNotifier {
     selectedIngredients.clear();
     selectedDifficulties.clear();
     selectedImpacts.clear();
+    selectedModes.clear();
     _applyFilters();
   }
 
