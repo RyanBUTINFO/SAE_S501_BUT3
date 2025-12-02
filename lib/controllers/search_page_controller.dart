@@ -71,9 +71,16 @@ class SearchPageController extends ChangeNotifier {
       ).toList();
     }
 
-    // remplace les résultats visibles par les résultats filtrés
     results = filtered;
     notifyListeners();
   }
 
+  void clearFilters() {
+    selectedIngredients.clear();
+    selectedModes.clear();
+    selectedDifficulties.clear();
+    selectedImpacts.clear();
+    notifyListeners();
+    _applyFilters();
+  }
 }
