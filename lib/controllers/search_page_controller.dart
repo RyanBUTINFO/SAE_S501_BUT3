@@ -5,17 +5,20 @@ import '../models/plat.dart';
 class SearchPageController extends ChangeNotifier {
   final PlatRepository _repository = PlatRepository();
 
-  List<Plat> results = [];
+  List<Plat> allResults = []; // résultats bruts venant du backend
+  List<Plat> results = [];    // résultats filtrés
   bool isLoading = false;
 
+  // 🔥 Filtres actifs
   Set<String> selectedIngredients = {};
-  Set<String> selectedModes = {};
   Set<String> selectedDifficulties = {};
   Set<String> selectedImpacts = {};
+  Set<String> selectedModes = {};
 
-  /// Recherche un plat par nom
+  /// Recherche par texte (inchangée)
   Future<void> search(String query) async {
     if (query.isEmpty) {
+      allResults = [];
       results = [];
       notifyListeners();
       return;
@@ -25,9 +28,11 @@ class SearchPageController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      results = await _repository.searchPlatsByName(query, limit: 30);
+      allResults = await _repository.searchPlatsByName(query, limit: 30);
+      _applyFilters();
     } catch (e) {
       debugPrint("Erreur recherche plats : $e");
+      allResults = [];
       results = [];
     }
 
@@ -35,6 +40,7 @@ class SearchPageController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 🔥 Active/désactive un filtre
   void toggleFilter(Set<String> filterSet, String value) {
     if (filterSet.contains(value)) {
       filterSet.remove(value);
@@ -44,43 +50,33 @@ class SearchPageController extends ChangeNotifier {
     _applyFilters();
   }
 
+  // 🔥 Réinitialiser tous les filtres
+  void clearFilters() {
+    selectedIngredients.clear();
+    selectedDifficulties.clear();
+    selectedImpacts.clear();
+    _applyFilters();
+  }
+
+  // 🔥 Applique les filtres localement sur allResults
   void _applyFilters() {
-    List<Plat> filtered = [...results];
+    List<Plat> filtered = List.from(allResults);
 
-    if (selectedIngredients.isNotEmpty) {
-      filtered = filtered.where((p) =>
-        p.ingredients.any((ing) => selectedIngredients.contains(ing))
-      ).toList();
-    }
-
-    if (selectedModes.isNotEmpty) {
-      filtered = filtered.where((p) =>
-        selectedModes.contains(p.modeDeCuisson)
-      ).toList();
-    }
-
+    // Difficulté
     if (selectedDifficulties.isNotEmpty) {
-      filtered = filtered.where((p) =>
-        selectedDifficulties.contains(p.difficulte)
+      filtered = filtered.where(
+        (p) => selectedDifficulties.contains(p.level ?? "")
       ).toList();
     }
 
+    // Impact écologique
     if (selectedImpacts.isNotEmpty) {
-      filtered = filtered.where((p) =>
-        selectedImpacts.contains(p.impactCarbone)
+      filtered = filtered.where(
+        (p) => selectedImpacts.contains(p.empreinteCarbone ?? "")
       ).toList();
     }
 
     results = filtered;
     notifyListeners();
-  }
-
-  void clearFilters() {
-    selectedIngredients.clear();
-    selectedModes.clear();
-    selectedDifficulties.clear();
-    selectedImpacts.clear();
-    notifyListeners();
-    _applyFilters();
   }
 }
