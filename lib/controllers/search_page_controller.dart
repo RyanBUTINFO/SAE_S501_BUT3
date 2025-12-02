@@ -43,4 +43,37 @@ class SearchPageController extends ChangeNotifier {
     }
     _applyFilters();
   }
+
+  void _applyFilters() {
+    List<Plat> filtered = [...results];
+
+    if (selectedIngredients.isNotEmpty) {
+      filtered = filtered.where((p) =>
+        p.ingredients.any((ing) => selectedIngredients.contains(ing))
+      ).toList();
+    }
+
+    if (selectedModes.isNotEmpty) {
+      filtered = filtered.where((p) =>
+        selectedModes.contains(p.modeDeCuisson)
+      ).toList();
+    }
+
+    if (selectedDifficulties.isNotEmpty) {
+      filtered = filtered.where((p) =>
+        selectedDifficulties.contains(p.difficulte)
+      ).toList();
+    }
+
+    if (selectedImpacts.isNotEmpty) {
+      filtered = filtered.where((p) =>
+        selectedImpacts.contains(p.impactCarbone)
+      ).toList();
+    }
+
+    // remplace les résultats visibles par les résultats filtrés
+    results = filtered;
+    notifyListeners();
+  }
+
 }
