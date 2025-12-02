@@ -1,5 +1,3 @@
-
-
 import '../database/database_helper.dart';
 import '../models/plat.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -113,24 +111,52 @@ class PlatRepository {
       return result.map((e) => Plat.fromMap(e)).toList();
     }
   }
+  // Récupère la liste unique de cuisines, nettoyée et triée
+  Future<List<String>> getCleanCuisines() async {
+    List<String> rawList = [];
 
-  /// Récupère un plat par son ID (nécessaire pour la page détail)
-  Future<Plat?> getPlatById(String id) async {
+    // 1️⃣ Récupération des cuisines depuis la DB
     if (kIsWeb) {
+      // Web : Sembast
       final store = intMapStoreFactory.store('plats');
-      final record = await store.record(int.tryParse(id) ?? -1).get(_dbHelper.sembastDb!);
-      if (record == null) return null;
-      return Plat.fromMap(record as Map<String, dynamic>);
+      final snapshot = await store.find(_dbHelper.sembastDb!);
+      rawList = snapshot
+          .map((r) => r.value['cuisine'])
+          .whereType<String>()
+          .toList();
     } else {
+      // Mobile/Desktop : SQLite
       final db = _dbHelper.sqfliteDb!;
-      final result = await db.query(
-        'plats',
-        where: 'id = ?',
-        whereArgs: [id],
-        limit: 1,
+      final result = await db.rawQuery(
+        'SELECT cuisine FROM plats WHERE cuisine IS NOT NULL AND cuisine != ""',
       );
-      if (result.isEmpty) return null;
-      return Plat.fromMap(result.first);
+      rawList = result.map((row) => row['cuisine'] as String).toList();
     }
+
+    // 2️⃣ Nettoyage et normalisation
+    final Set<String> uniqueCuisines = {};
+
+    for (var raw in rawList) {
+      // Supprime crochets et guillemets, puis split sur la virgule
+      final parts = raw.replaceAll(RegExp(r"[\[\]'\""]"), '').split(',');
+
+      for (var part in parts) {
+        var c = part.trim();
+        if (c.isEmpty) continue;
+
+        // Normalisation minimale
+        if (c.startsWith('Inspiré')) continue;
+        if (['États Unis', 'États Unis.', 'USA'].contains(c)) c = 'Américain';
+        if (c == 'Tex Mex') c = 'Tex-Mex';
+        if (c == 'Jamaïquain') c = 'Jamaïcain';
+
+        uniqueCuisines.add(c);
+      }
+    }
+
+    // 3️⃣ Retour trié alphabétiquement
+    final List<String> result = uniqueCuisines.toList()..sort();
+    return result;
   }
+ 
 }

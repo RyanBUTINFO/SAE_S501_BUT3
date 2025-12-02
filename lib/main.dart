@@ -50,7 +50,19 @@ void main() async {
   } catch (e) {
     print("Erreur lors du test de récupération des plats : $e");
   }
+  
+  // 🔹 TEST : récupération et affichage des cuisines
+  try {
+    final List<String> cuisines = await platRepo.getCleanCuisines();
 
+    print("=== DEBUG : Cuisines récupérées ===");
+    print("Nombre de cuisines : ${cuisines.length}");
+    for (var c in cuisines) {
+      print(" • $c");
+    }
+  } catch (e) {
+    print("Erreur lors de la récupération des cuisines : $e");
+  }
   runApp(const MiaamApp());
 }
 
