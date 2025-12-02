@@ -34,4 +34,14 @@ class SearchPageController extends ChangeNotifier {
     isLoading = false;
     notifyListeners();
   }
+
+  /// Toggle filter
+  void toggleFilter(Set<String> filterSet, String value) {
+    if (filterSet.contains(value)) {
+      filterSet.remove(value);
+    } else {
+      filterSet.add(value);
+    }
+    notifyListeners();
+  }
 }
