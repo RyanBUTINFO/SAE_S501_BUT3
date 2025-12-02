@@ -1,33 +1,67 @@
 import 'dart:io' show File, Directory;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
-import 'package:sembast/sembast.dart';
 import 'package:sembast_web/sembast_web.dart';
 
 class DatabaseHelper {
+  // Singleton Pattern
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   factory DatabaseHelper() => _instance;
   DatabaseHelper._internal();
 
-  sqflite.Database? _sqfliteDb; 
-  Database? _sembastDb; 
-  
+  // Instances de bases de données
+  sqflite.Database? _sqfliteDb;
+  Database? _sembastDb;
+
+  // Getters
   sqflite.Database? get sqfliteDb => _sqfliteDb;
   Database? get sembastDb => _sembastDb;
 
-  // Chemin vers la DB pré-remplie dans les assets
+  // Constantes
   static const String _dbAssetPath = 'assets/database/base_miaam.db';
   static const String _dbName = 'base_miaam.db';
+  static const String _webDbName = 'miaam_web.db';
 
-
+  /// Initialise la base de données selon la plateforme
   Future<void> initDatabase() async {
-    if (kIsWeb) {
-      // Logique pour le Web (Sembast)
-      final dbFactory = databaseFactoryWeb;
-      _sembastDb = await dbFactory.openDatabase('miaam_web.db');
-      print('Base web (Sembast Web) initialisée');
+    try {
+      if (kIsWeb) {
+        await _initWebDatabase();
+      } else {
+        await _initMobileDatabase();
+      }
+    } catch (e) {
+      debugPrint("ERREUR CRITIQUE lors de l'initialisation de la BDD : $e");
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // LOGIQUE WEB (Sembast)
+  // ---------------------------------------------------------------------------
+  
+  Future<void> _initWebDatabase() async {
+    final dbFactory = databaseFactoryWeb;
+    _sembastDb = await dbFactory.openDatabase(_webDbName);
+    debugPrint('🌐 Base Web (Sembast) initialisée avec succès.');
+  }
+
+  // ---------------------------------------------------------------------------
+  // LOGIQUE MOBILE / DESKTOP (SQLite)
+  // ---------------------------------------------------------------------------
+
+  Future<void> _initMobileDatabase() async {
+    final dbPath = await sqflite.getDatabasesPath();
+    final path = join(dbPath, _dbName);
+
+    // Vérification et copie depuis les assets si nécessaire
+    final exists = await File(path).exists();
+
+    if (!exists) {
+      debugPrint('📂 BDD introuvable. Copie depuis les assets...');
+      await _copyDatabaseFromAssets(path);
     } else {
       // Logique pour Mobile/Desktop (SQLite)
       final dbPath = await sqflite.getDatabasesPath();
@@ -51,41 +85,54 @@ class DatabaseHelper {
           final List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
           await File(path).writeAsBytes(bytes, flush: true);
 
-          print('Base de données $_dbName copiée avec succès de l\'asset. Prête à l\'emploi.');
+    // Ouverture de la base SQLite
+    _sqfliteDb = await sqflite.openDatabase(
+      path,
+      version: 1,
+      onOpen: (db) => debugPrint('📱 Base Mobile (SQLite) ouverte.'),
+    );
+  }
 
-        } catch (e) {
-          print('ERREUR: Impossible de copier la base de données de l\'asset. Vérifiez le chemin et le fichier pubspec.yaml. $e');
-        }
-      } else {
-        print('Base de données déjà existante. Ouverture directe.');
-      }
+  /// Helper pour copier le fichier .db des assets vers le stockage local
+  Future<void> _copyDatabaseFromAssets(String path) async {
+    try {
+      // Création du répertoire parent
+      await Directory(dirname(path)).create(recursive: true);
 
-      // Ouvre la base de données (que ce soit la nouvelle ou l'existante)
-      _sqfliteDb = await sqflite.openDatabase(
-        path,
-        version: 1,
-        onOpen: (db) {
-          print('Base mobile/desktop (SQLite) ouverte. Lancement RAPIDE.');
-        }
-      );
+      // Chargement et écriture des données
+      final data = await rootBundle.load(_dbAssetPath);
+      final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+      
+      await File(path).writeAsBytes(bytes, flush: true);
+      debugPrint('📥 Copie de la BDD réussie !');
+    } catch (e) {
+      debugPrint("⚠️ Erreur lors de la copie de l'asset : $e");
+      // On relance l'erreur pour qu'elle soit attrapée par initDatabase
+      throw Exception("Impossible de copier la DB depuis les assets");
     }
   }
-  
-  // -----------------------------
-  // Méthode de Récupération de Données (Base)
-  // -----------------------------
+
+  // ---------------------------------------------------------------------------
+  // MÉTHODES DE RÉCUPÉRATION (Unifiées)
+  // ---------------------------------------------------------------------------
+
+  /// Récupère tous les plats (Compatible Web & Mobile)
   Future<List<Map<String, dynamic>>> getAllPlats() async {
     if (kIsWeb) {
-      // Logique de récupération Sembast (Web)
-      return []; 
+      // Sembast : Lecture depuis le store 'plats'
+      if (_sembastDb == null) return [];
+      
+      final store = intMapStoreFactory.store('plats');
+      final snapshots = await store.find(_sembastDb!);
+      
+      // Conversion du format Sembast vers une Map standard
+      return snapshots.map((record) => record.value).toList();
     } else {
-      // Logique de récupération SQLite (Mobile/Desktop)
+      // SQLite : Requête SQL standard
       final db = _sqfliteDb;
       if (db == null) return [];
       
-      final List<Map<String, dynamic>> maps = await db.query('plats');
-      
-      return maps;
+      return await db.query('plats');
     }
   }
 }

@@ -1,3 +1,5 @@
+
+
 import '../database/database_helper.dart';
 import '../models/plat.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -14,6 +16,7 @@ class PlatRepository {
     if (kIsWeb) {
       return []; // Simplifié pour le contexte
     } else {
+      // Utilisation de votre getter sqfliteDb!
       final db = _dbHelper.sqfliteDb!;
       final result = await db.query('plats', where: 'origine LIKE ?', whereArgs: ['%$origine%'], limit: limit);
       return result.map((e) => Plat.fromMap(e)).toList();
