@@ -32,7 +32,7 @@ class DatabaseHelper {
       // Logique pour Mobile/Desktop (SQLite)
       final dbPath = await sqflite.getDatabasesPath();
       final path = join(dbPath, _dbName);
-      
+            
       // Vérifie si la DB existe déjà.
       final exists = await File(path).exists();
       
