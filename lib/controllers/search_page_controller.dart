@@ -8,6 +8,11 @@ class SearchPageController extends ChangeNotifier {
   List<Plat> results = [];
   bool isLoading = false;
 
+  Set<String> selectedIngredients = {};
+  Set<String> selectedModes = {};
+  Set<String> selectedDifficulties = {};
+  Set<String> selectedImpacts = {};
+
   /// Recherche un plat par nom
   Future<void> search(String query) async {
     if (query.isEmpty) {
