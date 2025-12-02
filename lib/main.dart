@@ -16,6 +16,7 @@ import 'Views/preferences_alimentaires_page.dart';         // AJOUTÉ (nécessai
 // --- IMPORTS DATA & CONTROLLERS ---
 import 'database/database_helper.dart';
 import 'repositories/plat_repository.dart';
+import 'repositories/plat_origin_repository.dart';
 import 'controllers/home_page_controller.dart';
 import 'controllers/search_page_controller.dart';
 import 'controllers/recommendation_controller.dart'; // AJOUTÉ (le contrôleur manquant)
@@ -38,7 +39,8 @@ void main() async {
   } else {
     print("Base Web initialisée (Sembast)");
   }
-
+/*
+  // Exemple d'affichage de 10 plats aléatoires au démarrage
   final platRepo = PlatRepository();
   try {
     final randomPlats = await platRepo.getRandomPlats(limit: 10);
@@ -49,20 +51,31 @@ void main() async {
     }
   } catch (e) {
     print("Erreur lors du test de récupération des plats : $e");
-  }
-  
-  // 🔹 TEST : récupération et affichage des cuisines
-  try {
-    final List<String> cuisines = await platRepo.getCleanCuisines();
+  }*/
+  // Exemple d'affichage des plats cibles + voisins
+  // ---------------------------------------------------------------------------
+  // 🔹 Instanciation du repository
+  final platOriginRepo = PlatOriginRepository();
 
-    print("=== DEBUG : Cuisines récupérées ===");
-    print("Nombre de cuisines : ${cuisines.length}");
-    for (var c in cuisines) {
-      print(" • $c");
+  try {
+    final discovery = await platOriginRepo.getDiscoveryPlatsGuaranteed("Américain");
+    final targetPlats = discovery['target']!;
+    final neighborPlats = discovery['neighbors']!;
+
+    print("=== 10 Plats du pays cible ===");
+    for (var p in targetPlats) {
+      print("${p.title} | ${p.level} | ${p.origine} | ${p.image}");
+    }
+
+    print("\n=== 10 Plats des pays voisins ===");
+    for (var p in neighborPlats) {
+      print("${p.title} | ${p.level} | ${p.origine} | ${p.image}");
     }
   } catch (e) {
-    print("Erreur lors de la récupération des cuisines : $e");
+    print("Erreur lors de la récupération des plats pour découverte : $e");
   }
+
+  
   runApp(const MiaamApp());
 }
 
