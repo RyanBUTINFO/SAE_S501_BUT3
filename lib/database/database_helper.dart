@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
+import 'package:sembast/sembast.dart';
 import 'package:sembast_web/sembast_web.dart';
 
 class DatabaseHelper {
@@ -41,7 +42,6 @@ class DatabaseHelper {
   // ---------------------------------------------------------------------------
   // LOGIQUE WEB (Sembast)
   // ---------------------------------------------------------------------------
-  
   Future<void> _initWebDatabase() async {
     final dbFactory = databaseFactoryWeb;
     _sembastDb = await dbFactory.openDatabase(_webDbName);
@@ -51,7 +51,6 @@ class DatabaseHelper {
   // ---------------------------------------------------------------------------
   // LOGIQUE MOBILE / DESKTOP (SQLite)
   // ---------------------------------------------------------------------------
-
   Future<void> _initMobileDatabase() async {
     final dbPath = await sqflite.getDatabasesPath();
     final path = join(dbPath, _dbName);
@@ -62,8 +61,6 @@ class DatabaseHelper {
     if (!exists) {
       debugPrint('📂 BDD introuvable. Copie depuis les assets...');
       await _copyDatabaseFromAssets(path);
-    } else {
-      debugPrint('✅ BDD existante trouvée. Ouverture...');
     }
 
     // Ouverture de la base SQLite
@@ -83,7 +80,7 @@ class DatabaseHelper {
       // Chargement et écriture des données
       final data = await rootBundle.load(_dbAssetPath);
       final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-      
+
       await File(path).writeAsBytes(bytes, flush: true);
       debugPrint('📥 Copie de la BDD réussie !');
     } catch (e) {
@@ -102,17 +99,17 @@ class DatabaseHelper {
     if (kIsWeb) {
       // Sembast : Lecture depuis le store 'plats'
       if (_sembastDb == null) return [];
-      
+
       final store = intMapStoreFactory.store('plats');
       final snapshots = await store.find(_sembastDb!);
-      
+
       // Conversion du format Sembast vers une Map standard
       return snapshots.map((record) => record.value).toList();
     } else {
       // SQLite : Requête SQL standard
       final db = _sqfliteDb;
       if (db == null) return [];
-      
+
       return await db.query('plats');
     }
   }

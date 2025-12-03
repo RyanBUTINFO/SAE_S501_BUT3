@@ -9,16 +9,39 @@ class SearchPageController extends ChangeNotifier {
   List<Plat> results = [];    // résultats filtrés
   bool isLoading = false;
 
-  // 🔥 Filtres actifs
-  Set<String> selectedIngredients = {};
-  Set<String> selectedDifficulties = {};
-  Set<String> selectedImpacts = {};
-  Set<String> selectedModes = {};
+  // --- ÉTATS DES FILTRES (Listes complètes) ---
+  List<String> selectedDifficulties = [];
+  List<String> selectedIngredients = [];
+  List<String> selectedCookingModes = [];
+  List<String> selectedEcoImpacts = []; // Présent pour l'UI, même si non filtré en SQL pour l'instant
 
-  /// Recherche par texte (inchangée)
-  Future<void> search(String query) async {
-    if (query.isEmpty) {
-      allResults = [];
+  String currentQuery = "";
+
+  /// Met à jour la recherche texte
+  void setQuery(String query) {
+    currentQuery = query;
+    search();
+  }
+
+  /// Fonction générique pour cocher/décocher un filtre
+  void toggleFilter(List<String> list, String value) {
+    if (list.contains(value)) {
+      list.remove(value);
+    } else {
+      list.add(value);
+    }
+    notifyListeners(); // Met à jour l'affichage (couleur verte)
+    search();          // Lance la recherche immédiatement
+  }
+
+  /// Lance la recherche globale
+  Future<void> search() async {
+    // Si tout est vide, on vide la liste
+    if (currentQuery.isEmpty &&
+        selectedDifficulties.isEmpty &&
+        selectedIngredients.isEmpty &&
+        selectedCookingModes.isEmpty &&
+        selectedEcoImpacts.isEmpty) {
       results = [];
       notifyListeners();
       return;
@@ -28,11 +51,15 @@ class SearchPageController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      allResults = await _repository.searchPlatsByName(query, limit: 30);
-      _applyFilters();
+      results = await _repository.searchPlatsByCriteria(
+        query: currentQuery,
+        difficulties: selectedDifficulties,
+        ingredients: selectedIngredients,
+        cookingModes: selectedCookingModes,
+        // ecoImpacts: selectedEcoImpacts, // On ne l'envoie pas au repo pour l'instant pour éviter les erreurs
+      );
     } catch (e) {
-      debugPrint("Erreur recherche plats : $e");
-      allResults = [];
+      debugPrint("Erreur recherche : $e");
       results = [];
     }
 
@@ -40,44 +67,14 @@ class SearchPageController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 🔥 Active/désactive un filtre
-  void toggleFilter(Set<String> filterSet, String value) {
-    if (filterSet.contains(value)) {
-      filterSet.remove(value);
-    } else {
-      filterSet.add(value);
-    }
-    _applyFilters();
-  }
-
-  // 🔥 Réinitialiser tous les filtres
-  void clearFilters() {
-    selectedIngredients.clear();
+  /// Réinitialise tous les filtres
+  void resetFilters() {
     selectedDifficulties.clear();
-    selectedImpacts.clear();
-    selectedModes.clear();
-    _applyFilters();
-  }
-
-  // 🔥 Applique les filtres localement sur allResults
-  void _applyFilters() {
-    List<Plat> filtered = List.from(allResults);
-
-    // Difficulté
-    if (selectedDifficulties.isNotEmpty) {
-      filtered = filtered.where(
-        (p) => selectedDifficulties.contains(p.level ?? "")
-      ).toList();
-    }
-
-    // Impact écologique
-    if (selectedImpacts.isNotEmpty) {
-      filtered = filtered.where(
-        (p) => selectedImpacts.contains(p.empreinteCarbone ?? "")
-      ).toList();
-    }
-
-    results = filtered;
-    notifyListeners();
+    selectedIngredients.clear();
+    selectedCookingModes.clear();
+    selectedEcoImpacts.clear();
+    
+    // On garde la recherche textuelle si l'utilisateur a tapé quelque chose
+    search();
   }
 }

@@ -15,6 +15,15 @@ class _SearchPageState extends State<SearchPage> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    // Synchroniser le champ texte avec le contrôleur au démarrage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchController.text = context.read<SearchPageController>().currentQuery;
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -26,7 +35,7 @@ class _SearchPageState extends State<SearchPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8F4),
-
+      // --- APP BAR ---
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: SafeArea(
@@ -34,17 +43,12 @@ class _SearchPageState extends State<SearchPage> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: [
-                Image.asset('assets/images/logo.png', width: 32, height: 32),
+                Image.asset('assets/images/logo.png', width: 32, height: 32,
+                    errorBuilder: (_, __, ___) => const Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23))),
                 const SizedBox(width: 8),
-                const Text("Miaam",
-                    style: TextStyle(color: Color(0xFF6B8E23),
-                        fontWeight: FontWeight.w700,
-                        fontSize: 22)),
+                const Text("Miaam", style: TextStyle(color: Color(0xFF6B8E23), fontWeight: FontWeight.w700, fontSize: 22)),
                 const Spacer(),
-                Text(
-                  TimeOfDay.now().format(context),
-                  style: const TextStyle(color: Colors.black38),
-                ),
+                Text(TimeOfDay.now().format(context), style: const TextStyle(color: Colors.black38)),
               ],
             ),
           ),
@@ -55,13 +59,13 @@ class _SearchPageState extends State<SearchPage> {
         children: [
           const SizedBox(height: 12),
 
-          // BARRE DE RECHERCHE
+          // --- BARRE DE RECHERCHE ---
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: TextField(
               controller: _searchController,
               onChanged: (value) {
-                context.read<SearchPageController>().search(value);
+                context.read<SearchPageController>().setQuery(value);
               },
               decoration: InputDecoration(
                 hintText: 'Une recette, des ingrédients...',
@@ -73,7 +77,8 @@ class _SearchPageState extends State<SearchPage> {
                   borderSide: BorderSide.none,
                 ),
                 suffixIcon: IconButton(
-                  icon: const Icon(Icons.tune, color: Color(0xFF6B8E23)),
+                  // L'icône change de couleur si le panneau filtre est ouvert
+                  icon: Icon(Icons.tune, color: _showFilters ? const Color(0xFFE57373) : const Color(0xFF6B8E23)),
                   onPressed: () => setState(() => _showFilters = !_showFilters),
                 ),
               ),
@@ -82,207 +87,191 @@ class _SearchPageState extends State<SearchPage> {
 
           const SizedBox(height: 16),
 
-          _showFilters ? _buildAdvancedFilters() : _buildResults(controller),
+          // --- CONTENU PRINCIPAL ---
+          if (_showFilters)
+            _buildAdvancedFilters() // Affiche le panneau de filtres
+          else
+            _buildSearchResults(),  // Affiche les résultats ou suggestions
         ],
       ),
     );
   }
 
-  // 🔥 Résultats / suggestions
-  Widget _buildResults(SearchPageController controller) {
-    if (controller.isLoading) {
-      return const Expanded(
-        child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF6B8E23)),
-        ),
-      );
-    }
-
-    // Suggestion si champ vide
-    if (_searchController.text.isEmpty) {
-      return Expanded(
-        child: Column(
-          children: [
-            const Text("Suggestions",
-                style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500)),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1.55,
-                  children: const [
-                    _SuggestionCard(title: "Crêpes sucrées parfait", difficulty: "Facile"),
-                    _SuggestionCard(title: "Tiramisu traditionnel", difficulty: "Difficile"),
-                    _SuggestionCard(title: "Lasagnes végétales", difficulty: "Moyen"),
-                    _SuggestionCard(title: "Smoothie détox vert", difficulty: "Facile"),
-                    _SuggestionCard(title: "Brioche feuilletée", difficulty: "Difficile"),
-                    _SuggestionCard(title: "Bowl de quinoa épicé", difficulty: "Facile"),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    // Aucun résultat
-    if (controller.results.isEmpty) {
-      return const Expanded(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off, size: 64, color: Colors.black26),
-              SizedBox(height: 10),
-              Text("Aucune recette trouvée",
-                  style: TextStyle(color: Colors.black45)),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Résultats filtrés
+  // --- PANNEAU DES RÉSULTATS ---
+  Widget _buildSearchResults() {
     return Expanded(
-      child: Column(
-        children: [
-          Text('${controller.results.length} résultats trouvés',
-              style: const TextStyle(color: Colors.black54)),
-          const SizedBox(height: 10),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: GridView.builder(
-                itemCount: controller.results.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 1.55),
-                itemBuilder: (context, index) {
-                  final Plat plat = controller.results[index];
-                  return _SuggestionCard(
-                    title: plat.title ?? "Nom inconnu",
-                    difficulty: plat.level ?? "Moyen",
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+      child: Consumer<SearchPageController>(
+        builder: (context, controller, child) {
+          
+          if (controller.isLoading) {
+            return const Center(child: CircularProgressIndicator(color: Color(0xFF6B8E23)));
+          }
 
-  // 🔥 Filtres avancés (entier)
-  Widget _buildAdvancedFilters() {
-    final controller = context.watch<SearchPageController>();
+          // Si rien n'est recherché, afficher les suggestions statiques
+          if (controller.currentQuery.isEmpty && 
+              controller.selectedDifficulties.isEmpty && 
+              controller.selectedIngredients.isEmpty &&
+              controller.selectedCookingModes.isEmpty) {
+            return _buildStaticSuggestions();
+          }
 
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10)],
-        ),
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          if (controller.results.isEmpty) {
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Filtres avancés",
-                      style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold)),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => setState(() => _showFilters = false),
-                  ),
+                  Icon(Icons.search_off, size: 64, color: Colors.black26),
+                  SizedBox(height: 10),
+                  Text("Aucune recette trouvée", style: TextStyle(color: Colors.black45)),
                 ],
               ),
-            ),
-            const Divider(),
+            );
+          }
 
-            // LISTE DES FILTRES
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _filterSection(
-                      title: "Ingrédients",
-                      icon: Icons.fastfood,
-                      options: const ["Poulet", "Riz", "Tomates", "Oignons", "Carottes", "Pâtes", "Œufs", "Fromage"],
-                      selectedSet: controller.selectedIngredients,
+          // Grille des résultats trouvés
+          return Column(
+            children: [
+              Text('${controller.results.length} résultats trouvés', style: const TextStyle(color: Colors.black54, fontSize: 14)),
+              const SizedBox(height: 10),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: GridView.builder(
+                    itemCount: controller.results.length,
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      childAspectRatio: 0.8, // Ratio ajusté pour bien voir les cartes
                     ),
-                    _filterSection(
-                      title: "Mode de cuisson",
-                      icon: Icons.local_fire_department,
-                      options: const ["Four", "Poêle", "Casserole", "Vapeur", "Friture", "Grill", "Cru"],
-                      selectedSet: controller.selectedModes,
-                    ),
-                    _filterSection(
-                      title: "Difficulté",
-                      icon: Icons.bar_chart,
-                      options: const ["Facile", "Moyen", "Difficile"],
-                      selectedSet: controller.selectedDifficulties,
-                    ),
-                    _filterSection(
-                      title: "Impact écologique",
-                      icon: Icons.eco,
-                      options: const ["Faible", "Moyen", "Élevé"],
-                      selectedSet: controller.selectedImpacts,
-                    ),
-                  ],
+                    itemBuilder: (context, index) {
+                      final Plat plat = controller.results[index];
+                      return _SuggestionCard(
+                        title: plat.title ?? "Nom inconnu",
+                        difficulty: plat.level ?? "Moyen",
+                        imagePath: plat.image, // On passe l'image si dispo
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-
-            // Bouton reset
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    controller.clearFilters();
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6B8E23),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30))),
-                  child: const Text("Réinitialiser les filtres",
-                      style: TextStyle(color: Colors.white)),
-                ),
-              ),
-            ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
     );
   }
 
-  // 🔥 Génération dynamique des filtres
-  Widget _filterSection({
-    required String title,
-    required IconData icon,
-    required List<String> options,
-    required Set<String> selectedSet,
-  }) {
-    final controller = context.watch<SearchPageController>();
+  // --- PANNEAU DES FILTRES (CORRIGÉ) ---
+  Widget _buildAdvancedFilters() {
+    return Expanded(
+      child: Consumer<SearchPageController>(
+        builder: (context, controller, child) {
+          return Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 4))],
+            ),
+            child: Column(
+              children: [
+                // En-tête
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Filtres avancés", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.black54),
+                        onPressed: () => setState(() => _showFilters = false),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
 
+                // Liste des catégories de filtres
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        
+                        // 1. Ingrédients (Connecté au controller)
+                        _filterSection(
+                          "Ingrédients", Icons.fastfood,
+                          ["Poulet", "Riz", "Tomates", "Oignons", "Carottes", "Pâtes", "Œufs", "Fromage", "Champignons"],
+                          controller.selectedIngredients, // La liste active
+                          (val) => controller.toggleFilter(controller.selectedIngredients, val), // L'action
+                        ),
+
+                        // 2. Mode de cuisson (Connecté au controller)
+                        _filterSection(
+                          "Mode de cuisson", Icons.local_fire_department,
+                          ["Four", "Poêle", "Casserole", "Vapeur", "Friture", "Wok"],
+                          controller.selectedCookingModes,
+                          (val) => controller.toggleFilter(controller.selectedCookingModes, val),
+                        ),
+
+                        // 3. Difficulté (Connecté au controller)
+                        _filterSection(
+                          "Difficulté", Icons.bar_chart,
+                          ["Facile", "Moyen", "Difficile"],
+                          controller.selectedDifficulties,
+                          (val) => controller.toggleFilter(controller.selectedDifficulties, val),
+                        ),
+                        
+                        // 4. Impact (Visuel uniquement pour l'instant)
+                        _filterSection(
+                          "Impact écologique", Icons.eco,
+                          ["Faible", "Moyen", "Élevé"],
+                          controller.selectedEcoImpacts,
+                          (val) => controller.toggleFilter(controller.selectedEcoImpacts, val),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Bouton Réinitialiser
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        controller.resetFilters();
+                        // Optionnel : fermer le panneau après reset
+                        // setState(() => _showFilters = false);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6B8E23),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: const Text("Réinitialiser les filtres", style: TextStyle(color: Colors.white, fontSize: 16)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // --- WIDGET HELPER POUR UNE SECTION DE FILTRE ---
+  Widget _filterSection(
+    String title, 
+    IconData icon, 
+    List<String> options, 
+    List<String> selectedList, 
+    Function(String) onToggle
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -301,16 +290,22 @@ class _SearchPageState extends State<SearchPage> {
           spacing: 10,
           runSpacing: 10,
           children: options.map((opt) {
+            final isSelected = selectedList.contains(opt);
             return FilterChip(
               label: Text(opt),
-              selected: selectedSet.contains(opt),
-              onSelected: (_) =>
-                  controller.toggleFilter(selectedSet, opt),
-              selectedColor: const Color(0xFF6B8E23),
+              selected: isSelected,
+              onSelected: (_) => onToggle(opt), // C'est ici que le clic est détecté
+              backgroundColor: Colors.grey[100],
+              selectedColor: const Color(0xFF6B8E23), // Vert Kaki quand sélectionné
+              checkmarkColor: Colors.white,
               labelStyle: TextStyle(
-                color: selectedSet.contains(opt)
-                    ? Colors.white
-                    : Colors.black87,
+                fontSize: 14,
+                color: isSelected ? Colors.white : Colors.black87,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(color: isSelected ? Colors.transparent : Colors.grey.shade300),
               ),
             );
           }).toList(),
@@ -318,13 +313,44 @@ class _SearchPageState extends State<SearchPage> {
       ],
     );
   }
+
+  // --- WIDGET SUGGESTIONS PAR DÉFAUT ---
+  Widget _buildStaticSuggestions() {
+    return Column(
+      children: [
+        const Text('Suggestions', style: TextStyle(color: Colors.black54, fontSize: 16, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 20),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: GridView.count(
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.55,
+              children: const [
+                _SuggestionCard(title: "Crêpes sucrées parfait", difficulty: "Facile"),
+                _SuggestionCard(title: "Tiramisu traditionnel", difficulty: "Difficile"),
+                _SuggestionCard(title: "Lasagnes végétales", difficulty: "Moyen"),
+                _SuggestionCard(title: "Smoothie détox vert", difficulty: "Facile"),
+                _SuggestionCard(title: "Brioche feuilletée", difficulty: "Difficile"),
+                _SuggestionCard(title: "Bowl de quinoa épicé", difficulty: "Facile"),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-// 🔥 Carte suggestion (identique à ton code)
+// --- CARTE DE RECETTE ---
 class _SuggestionCard extends StatelessWidget {
   final String title;
   final String difficulty;
-  const _SuggestionCard({required this.title, required this.difficulty});
+  final String? imagePath; // Optionnel
+
+  const _SuggestionCard({required this.title, required this.difficulty, this.imagePath});
 
   Color _getColor() {
     final level = difficulty.trim().toLowerCase();
@@ -349,13 +375,14 @@ class _SuggestionCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(title,
-                maxLines: 2,
+            Expanded(
+              child: Text(
+                title, 
+                maxLines: 2, 
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87)),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.black87)
+              ),
+            ),
             const SizedBox(height: 10),
             Row(
               children: [
@@ -373,3 +400,4 @@ class _SuggestionCard extends StatelessWidget {
     );
   }
 }
+
