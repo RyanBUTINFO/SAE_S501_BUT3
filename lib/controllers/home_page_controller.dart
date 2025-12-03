@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/plat.dart';
 import '../repositories/plat_repository.dart';
 import '../repositories/plat_origin_repository.dart';
+import '../Views/infos_plat.dart'; // <<< Import de la page de destination
 
 class HomePageController extends ChangeNotifier {
   final PlatRepository _repo = PlatRepository();
@@ -24,18 +25,13 @@ class HomePageController extends ChangeNotifier {
   bool get isRecommendationMode => _isRecommendationMode;
 
   // --- SWITCH MODE ---
-  // Modifié pour actualiser même si on clique sur le même mode
   void setMode(bool recommendationMode) {
-    // On met à jour la variable (même si c'est la même valeur, ce n'est pas grave)
     _isRecommendationMode = recommendationMode;
-    
-    // On force le rechargement des données à chaque clic
     loadData(); 
   }
 
   // --- LOAD DATA (Routeur principal) ---
   Future<void> loadData() async {
-    // Si une requête est déjà en cours, on ne fait rien pour éviter les bugs visuels
     if (_isLoading) return;
 
     if (_isRecommendationMode) {
@@ -48,13 +44,11 @@ class HomePageController extends ChangeNotifier {
   // --- MODE 1 : DÉCOUVERTE (Random) ---
   Future<void> _loadDiscoveryMode() async {
     _isLoading = true;
-    notifyListeners(); // Affiche le rond de chargement
+    notifyListeners();
 
     try {
-      // Récupère 15 nouvelles recettes aléatoires
       _currentPlats = await _repo.getRandomPlats(limit: 15);
       
-      // Sécurité anti-crash
       // ignore: unnecessary_null_comparison
       if (_currentPlats == null) _currentPlats = [];
 
@@ -64,7 +58,7 @@ class HomePageController extends ChangeNotifier {
     }
 
     _isLoading = false;
-    notifyListeners(); // Affiche les résultats
+    notifyListeners();
   }
 
   // --- MODE 2 : RECOMMANDATION (Preferences) ---
@@ -81,15 +75,12 @@ class HomePageController extends ChangeNotifier {
       if (cuisinesJson != null) {
         List<String> favCuisines = List<String>.from(jsonDecode(cuisinesJson));
         if (favCuisines.isNotEmpty) {
-          // Prend une cuisine aléatoire parmi les favorites pour changer à chaque clic
           target = favCuisines[Random().nextInt(favCuisines.length)];
         }
       }
 
-      // Récupération des plats recommandés
       _currentPlats = await _originRepo.getDiscoveryPlatsGuaranteed(target);
       
-      // Fallback si vide
       if (_currentPlats.isEmpty) {
         _currentPlats = await _repo.getRandomPlats(limit: 15);
       }
@@ -101,5 +92,26 @@ class HomePageController extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  // ----------------------------------------------------------------------
+  // --- MÉTHODE CRUCIALE : GESTION DU CLIC ET ENRICHISSEMENT ---
+  // ----------------------------------------------------------------------
+
+  /// Gère le clic sur un plat : enrichit l'objet Plat et navigue vers la page de détails.
+  Future<void> onPlatTapped(BuildContext context, Plat plat) async {
+    
+    // 1. Déclenche l'enrichissement des données complexes (ingrédients, JSON)
+    // C'est ICI que le contrôleur reçoit le Plat enrichi du repository.
+    Plat platEnrichi = await _repo.enrichirPlatPourDetails(plat); // <<< L'objet enrichi est reçu ici !
+
+    // 2. Navigation vers la page de détails, en passant l'objet enrichi
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        // CORRECTION: Utilisation de InfosPlat, conformément à l'import '../views/infos_plat.dart'
+        builder: (context) => RecipePage(plat: platEnrichi), 
+      ),
+    );
   }
 }
