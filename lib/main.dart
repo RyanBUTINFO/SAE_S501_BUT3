@@ -2,24 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
-// --- IMPORTS VUES ---
+// --- IMPORTS VIEWS ---
 import 'Views/home_page.dart';
 import 'Views/search_page.dart';
 import 'Views/favorites_page.dart';
 import 'Views/infos_plat.dart';
 import 'Views/splash_screen.dart';
 import 'Views/tutorial_page.dart';
-import 'Views/recommendation_page.dart'; 
-import 'Views/preferences_alimentaires_page.dart';         // AJOUTÉ (nécessaire)
-
+// RecommendationPage is removed as it is merged into HomePage
+import 'Views/preferences_alimentaires_page.dart'; 
 
 // --- IMPORTS DATA & CONTROLLERS ---
 import 'database/database_helper.dart';
-import 'repositories/plat_repository.dart';
-import 'repositories/plat_origin_repository.dart';
 import 'controllers/home_page_controller.dart';
 import 'controllers/search_page_controller.dart';
-import 'controllers/recommendation_controller.dart'; // AJOUTÉ (le contrôleur manquant)
+// RecommendationController is removed as its logic is merged into HomePageController
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,50 +29,14 @@ void main() async {
       final tables = await dbHelper.sqfliteDb!.rawQuery(
         "SELECT name FROM sqlite_master WHERE type='table';",
       );
-      print("Tables SQLite trouvées : ${tables.map((t) => t['name']).toList()}");
+      print("✅ Tables SQLite trouvées : ${tables.map((t) => t['name']).toList()}");
     } catch (e) {
-      print("Erreur lors de la vérification des tables : $e");
+      print("❌ Erreur lors de la vérification des tables : $e");
     }
   } else {
-    print("Base Web initialisée (Sembast)");
-  }
-/*
-  // Exemple d'affichage de 10 plats aléatoires au démarrage
-  final platRepo = PlatRepository();
-  try {
-    final randomPlats = await platRepo.getRandomPlats(limit: 10);
-    print("=== DEBUG : 10 plats aléatoires chargés au démarrage ===");
-    for (var p in randomPlats) {
-      print(
-          "${p.title} | ${p.level} | ${p.origine} | ${p.image} | ${p.context?.substring(0, p.context!.length > 50 ? 50 : p.context!.length)}...");
-    }
-  } catch (e) {
-    print("Erreur lors du test de récupération des plats : $e");
-  }*/
-  // Exemple d'affichage des plats cibles + voisins
-  // ---------------------------------------------------------------------------
-  // 🔹 Instanciation du repository
-  final platOriginRepo = PlatOriginRepository();
-
-  try {
-    final discovery = await platOriginRepo.getDiscoveryPlatsGuaranteed("Américain");
-    final targetPlats = discovery['target']!;
-    final neighborPlats = discovery['neighbors']!;
-
-    print("=== 10 Plats du pays cible ===");
-    for (var p in targetPlats) {
-      print("${p.title} | ${p.level} | ${p.origine} | ${p.image}");
-    }
-
-    print("\n=== 10 Plats des pays voisins ===");
-    for (var p in neighborPlats) {
-      print("${p.title} | ${p.level} | ${p.origine} | ${p.image}");
-    }
-  } catch (e) {
-    print("Erreur lors de la récupération des plats pour découverte : $e");
+    print("🌐 Base Web initialisée (Sembast)");
   }
 
-  
   runApp(const MiaamApp());
 }
 
@@ -88,10 +49,10 @@ class MiaamApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => HomePageController()),
         ChangeNotifierProvider(create: (_) => SearchPageController()),
-        ChangeNotifierProvider(create: (_) => RecommendationController()), // AJOUTÉ 
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
+        title: 'Miaam',
         theme: ThemeData(
           scaffoldBackgroundColor: const Color(0xFFF6F8F4),
           primaryColor: const Color(0xFF6B8E23),
@@ -100,14 +61,14 @@ class MiaamApp extends StatelessWidget {
             secondary: const Color(0xFFE5EBE0),
           ),
         ),
+        
         initialRoute: '/splash',
         routes: {
           '/splash': (context) => const SplashScreen(),
           '/tutorial': (context) => const TutorialPage(),
           '/main': (context) => const MainNavigator(),
           '/infos_plat': (context) => const RecipePage(),
-          '/recommendation': (context) => const RecommendationPage(), // AJOUTÉ
-          '/preferences_alimentaires': (context) => const PreferencesAlimentairesPage(), 
+          '/preferences': (context) => const PreferencesAlimentairesPage(), 
         },
       ),
     );
@@ -124,17 +85,11 @@ class MainNavigator extends StatefulWidget {
 class _MainNavigatorState extends State<MainNavigator> {
   int currentIndex = 0;
 
-  late final List<Widget> pages;
-
-  @override
-  void initState() {
-    super.initState();
-    pages = [
-      const HomePage(),
-      const SearchPage(),
-      const FavoritesPage(),
-    ];
-  }
+  final List<Widget> pages = const [
+    HomePage(),
+    SearchPage(),
+    FavoritesPage(),
+  ];
 
   @override
   Widget build(BuildContext context) {

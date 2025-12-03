@@ -1,66 +1,72 @@
 import '../database/database_helper.dart';
 import '../models/plat.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:math';
 
 class PlatOriginRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
-  final Random _random = Random();
 
-  /// 🔹 Retourne 10 plats du pays cible + 10 plats des pays voisins, de manière aléatoire
-  Future<Map<String, List<Plat>>> getDiscoveryPlatsGuaranteed(String target) async {
+  // 🔹 Returns a merged LIST (10 targets + 10 neighbors)
+  Future<List<Plat>> getDiscoveryPlatsGuaranteed(String target) async {
     final db = _dbHelper.sqfliteDb;
+    
+    // Safety check: if DB is not open (on mobile), return empty
+    if (!kIsWeb && db == null) return [];
 
-    if (!kIsWeb && db == null) return {'target': [], 'neighbors': []};
-
-    // Normalisation du nom
+    // 1️⃣ Normalization
     String keyMap = target.trim();
-    if (keyMap.isNotEmpty) keyMap = keyMap[0].toUpperCase() + keyMap.substring(1);
+    if (keyMap.isNotEmpty) {
+      keyMap = keyMap[0].toUpperCase() + keyMap.substring(1);
+    }
+    // Specific fix for "Americain" -> "Américain" to match the map keys
     if (keyMap == "Americain") keyMap = "Américain";
 
-    // 🔹 Plats du pays cible
-    List<Plat> targetPlats = [];
+    // 2️⃣ Targets
+    List<Plat> mainList = [];
     if (!kIsWeb) {
-      final resMain = List<Map<String, Object?>>.from(
-        await db!.query(
-          'plats',
-          where: "origine LIKE ? OR cuisine LIKE ?",
-          whereArgs: ["%$keyMap%", "%$keyMap%"],
-        ),
+      final resMain = await db!.query(
+        'plats',
+        where: "cuisine LIKE ?",
+        whereArgs: ["%$keyMap%"],
+        orderBy: 'RANDOM()',
+        limit: 10,
       );
-      // Mélanger et prendre 10
-      resMain.shuffle(_random);
-      targetPlats = resMain.take(10).map((e) => Plat.fromMap(e)).toList();
+      mainList = resMain.map((e) => Plat.fromMap(e)).toList();
     }
 
-    // 🔹 Plats des voisins
-    List<String> neighbors = _cuisineTopology[keyMap] ?? [];
-    List<Plat> neighborPlats = [];
+    // 3️⃣ Neighbors
+    List<String> neighbors = [];
+    if (_cuisineTopology.containsKey(keyMap)) {
+      neighbors = _cuisineTopology[keyMap]!;
+    }
+
+    List<Plat> neighborList = [];
     if (neighbors.isNotEmpty && !kIsWeb) {
-      for (var neighbor in neighbors) {
-        final res = List<Map<String, Object?>>.from(
-          await db!.query(
-            'plats',
-            where: "origine LIKE ? OR cuisine LIKE ?",
-            whereArgs: ["%$neighbor%", "%$neighbor%"],
-          ),
-        );
-        // Mélange les plats de ce voisin
-        res.shuffle(_random);
-        // Prends au maximum 2 plats par voisin pour que tous aient une chance
-        neighborPlats.addAll(res.take(2).map((e) => Plat.fromMap(e)));
+      List<String> whereClauses = [];
+      List<String> args = [];
+      for (var n in neighbors) {
+        whereClauses.add("cuisine LIKE ?");
+        args.add("%$n%");
       }
-      // Mélange final pour avoir un ordre aléatoire
-      neighborPlats.shuffle(_random);
-      // Limite à 10 plats
-      if (neighborPlats.length > 10) {
-        neighborPlats = neighborPlats.take(10).toList();
+      
+      if (whereClauses.isNotEmpty) {
+        final resNeighbors = await db!.query(
+          'plats',
+          where: whereClauses.join(" OR "),
+          whereArgs: args,
+          orderBy: 'RANDOM()',
+          limit: 10,
+        );
+        neighborList = resNeighbors.map((e) => Plat.fromMap(e)).toList();
       }
     }
 
-    return {'target': targetPlats, 'neighbors': neighborPlats};
+    // 4️⃣ Merge and return a LIST
+    final all = [...mainList, ...neighborList];
+    final uniqueIds = <int>{};
+    return all.where((p) => p.id != null && uniqueIds.add(p.id!)).toList();
   }
 
+  // ==================== TOPOLOGY MAP ====================
   static final Map<String, List<String>> _cuisineTopology = {
     'Français': ['Italien', 'Espagnol', 'Belge', 'Suisse', 'Allemand', 'Anglais'],
     'La France': ['Italien', 'Espagnol', 'Belge', 'Suisse', 'Allemand'],
@@ -70,15 +76,11 @@ class PlatOriginRepository {
     'Autrichien': ['Allemand', 'Hongrois', 'Tchèque', 'Suisse'],
     'Hollandais': ['Belge', 'Allemand', 'Néerlandais'],
     'Néerlandais': ['Belge', 'Allemand', 'Hollandais'],
-
-    // === 🇬🇧 ÎLES BRITANNIQUES ===
     'Anglais': ['Français', 'Irlandais', 'Écossais', 'Gallois', 'Américain', 'Indien'],
     'Britannique': ['Anglais', 'Irlandais', 'Écossais', 'Gallois'],
     'Irlandais': ['Anglais', 'Britannique', 'Écossais'],
     'Écossais': ['Anglais', 'Britannique', 'Irlandais'],
     'Gallois': ['Anglais', 'Britannique'],
-
-    // === ☀️ EUROPE DU SUD & MÉDITERRANÉE ===
     'Italien': ['Français', 'Grec', 'Espagnol', 'Suisse', 'Autrichien', 'Sicilien'],
     'LItalie': ['Français', 'Grec', 'Espagnol', 'Sicilien'],
     'Sicilien': ['Italien', 'Grec', 'La Méditerranée'],
@@ -87,8 +89,6 @@ class PlatOriginRepository {
     'Grec': ['Italien', 'Turc', 'Libanais', 'Moyen-Orient', 'La Méditerranée'],
     'La Grèce': ['Italien', 'Turc', 'Libanais'],
     'La Méditerranée': ['Italien', 'Grec', 'Espagnol', 'Français', 'Libanais'],
-
-    // === ❄️ SCANDINAVIE & EST ===
     'Scandinave': ['Suédois', 'Norvégien', 'Danois', 'Finlandais', 'Allemand'],
     'Suédois': ['Norvégien', 'Danois', 'Finlandais'],
     'Norvégien': ['Suédois', 'Danois'],
@@ -100,8 +100,6 @@ class PlatOriginRepository {
     'Hongrois': ['Autrichien', 'Tchèque', 'Europe de lEst'],
     'Ukrainien': ['Russe', 'Polonais', 'Europe de lEst'],
     'Europe de lEst': ['Russe', 'Polonais', 'Hongrois', 'Tchèque'],
-
-    // === 🇺🇸 AMÉRIQUE DU NORD ===
     'Américain': ['Canadien', 'Mexicain', 'Anglais', 'Cajun', 'Créole', 'Du sud'],
     'États-Unis': ['Américain', 'Canadien', 'Mexicain'],
     'Canadien': ['Américain', 'Français', 'Canadien français'],
@@ -113,8 +111,6 @@ class PlatOriginRepository {
     'Sud-Ouest': ['Américain', 'Mexicain', 'Tex-Mex'],
     'Amérindien': ['Américain', 'Mexicain'],
     'Amish': ['Allemand', 'Américain'],
-
-    // === 🌮 MEXIQUE & AMÉRIQUE LATINE ===
     'Mexicain': ['Américain', 'Tex-Mex', 'Espagnol', 'Argentin', 'Colombien'],
     'Mexique': ['Américain', 'Tex-Mex', 'Espagnol'],
     'Tex-Mex': ['Mexicain', 'Américain', 'Du sud'],
@@ -128,15 +124,11 @@ class PlatOriginRepository {
     'Péruvien': ['Chilien', 'Colombien', 'Japonais'],
     'Salvadorien': ['Mexicain', 'Latino'],
     'Sud-Américain': ['Argentin', 'Brésilien', 'Chilien', 'Péruvien'],
-
-    // === 🏝️ CARAÏBES ===
     'Caraïbes': ['Jamaïcain', 'Cubain', 'Portoricain', 'Créole'],
     'Caribéen': ['Jamaïcain', 'Cubain', 'Portoricain'],
     'Cubain': ['Espagnol', 'Caribéen', 'Américain'],
     'Jamaïcain': ['Anglais', 'Caribéen', 'Indien'],
     'Portoricain': ['Américain', 'Espagnol', 'Caribéen'],
-
-    // === 🥢 ASIE DE L'EST ===
     'Chinois': ['Japonais', 'Coréen', 'Vietnamien', 'Thaïlandais', 'Sichuan'],
     'La Chine': ['Japonais', 'Coréen', 'Asiatique'],
     'Sichuan': ['Chinois', 'Asiatique'],
@@ -146,8 +138,6 @@ class PlatOriginRepository {
     'La Corée': ['Japonais', 'Chinois'],
     'Asiatique': ['Chinois', 'Japonais', 'Indien', 'Thaïlandais'],
     'LAsie': ['Chinois', 'Japonais', 'Indien'],
-
-    // === 🍛 ASIE DU SUD & SUD-EST ===
     'Indien': ['Pakistanais', 'Sri Lankais', 'Anglais', 'Asiatique'],
     'LInde': ['Pakistanais', 'Sri Lankais'],
     'Pakistanais': ['Indien', 'Moyen-Orient', 'Afghan'],
@@ -159,9 +149,7 @@ class PlatOriginRepository {
     'Indonésien': ['Malaisien', 'Thaïlandais', 'Hollandais'],
     'Malaisien': ['Indonésien', 'Thaïlandais', 'Indien', 'Chinois'],
     'Philippin': ['Espagnol', 'Américain', 'Asiatique', 'Malaisien'],
-
-    // === 🐪 MOYEN-ORIENT & AFRIQUE DU NORD ===
-    'Moyen-Orient': ['Libanais', 'Turc', 'Syrien', 'Égyptien', 'Persan'],
+    'Moyen-Orient': ['Libanais', 'Turc', 'Syrien', 'Égyptien', 'Perse'],
     'Libanais': ['Syrien', 'Turc', 'Grec', 'Israélien', 'Français'],
     'Turc': ['Grec', 'Moyen-Orient', 'Arménien'],
     'Syrien': ['Libanais', 'Turc', 'Moyen-Orient'],
@@ -171,8 +159,6 @@ class PlatOriginRepository {
     'Arménien': ['Turc', 'Russe', 'Moyen-Orient'],
     'Persan': ['Moyen-Orient', 'Indien', 'Turc'],
     'Afghan': ['Persan', 'Pakistanais', 'Indien'],
-
-    // === 🌍 MAGHREB & AFRIQUE ===
     'Marocain': ['Algérien', 'Tunisien', 'Espagnol', 'Français', 'Couscous'],
     'Algérien': ['Marocain', 'Tunisien', 'Français'],
     'Tunisien': ['Algérien', 'Marocain', 'Italien', 'Français'],
@@ -181,11 +167,8 @@ class PlatOriginRepository {
     'Éthiopien': ['Africain', 'Indien'],
     'Africain': ['Nord-Africain', 'Sud-Africain', 'Caribéen'],
     'Sud-Africain': ['Anglais', 'Hollandais', 'Indien', 'Africain'],
-
-    // === 🐨 OCÉANIE ===
     'Australien': ['Anglais', 'Néo-Zélandais', 'Asiatique'],
     'Néo-Zélandais': ['Australien', 'Anglais'],
     'Hawaïen': ['Américain', 'Japonais', 'Polynésien'],
-    // ... le reste
   };
 }
