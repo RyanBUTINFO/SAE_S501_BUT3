@@ -1,4 +1,5 @@
 class Plat {
+  String? instructionsText; // <--- AJOUTER CETTE LIGNE
   final int? id;
   final String? nom;
   final String? type;

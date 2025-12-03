@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:sqflite/sqflite.dart' as sqflite;
 import 'package:path/path.dart';
+import 'package:sembast/sembast.dart';
 import 'package:sembast_web/sembast_web.dart';
 
 class DatabaseHelper {
@@ -41,7 +42,6 @@ class DatabaseHelper {
   // ---------------------------------------------------------------------------
   // LOGIQUE WEB (Sembast)
   // ---------------------------------------------------------------------------
-  
   Future<void> _initWebDatabase() async {
     final dbFactory = databaseFactoryWeb;
     _sembastDb = await dbFactory.openDatabase(_webDbName);
@@ -51,7 +51,6 @@ class DatabaseHelper {
   // ---------------------------------------------------------------------------
   // LOGIQUE MOBILE / DESKTOP (SQLite)
   // ---------------------------------------------------------------------------
-
   Future<void> _initMobileDatabase() async {
     final dbPath = await sqflite.getDatabasesPath();
     final path = join(dbPath, _dbName);
@@ -62,28 +61,7 @@ class DatabaseHelper {
     if (!exists) {
       debugPrint('📂 BDD introuvable. Copie depuis les assets...');
       await _copyDatabaseFromAssets(path);
-    } else {
-      // Logique pour Mobile/Desktop (SQLite)
-      final dbPath = await sqflite.getDatabasesPath();
-      final path = join(dbPath, _dbName);
-            
-      // Vérifie si la DB existe déjà.
-      final exists = await File(path).exists();
-      
-      if (!exists) {
-        // --- LOGIQUE FINALE: Copie de l'asset si la DB n'existe pas ---
-        print('Base de données non trouvée. Début de la copie rapide de l\'asset.');
-        
-        try {
-          // 1. Lire l'asset (votre base de données pré-remplie)
-          final data = await rootBundle.load(_dbAssetPath);
-          
-          // 2. Créer les répertoires si nécessaire
-          await Directory(dirname(path)).create(recursive: true);
-          
-          // 3. Écrire l'asset dans le dossier des bases de données de l'application
-          final List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-          await File(path).writeAsBytes(bytes, flush: true);
+    }
 
     // Ouverture de la base SQLite
     _sqfliteDb = await sqflite.openDatabase(
@@ -102,7 +80,7 @@ class DatabaseHelper {
       // Chargement et écriture des données
       final data = await rootBundle.load(_dbAssetPath);
       final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-      
+
       await File(path).writeAsBytes(bytes, flush: true);
       debugPrint('📥 Copie de la BDD réussie !');
     } catch (e) {
@@ -121,17 +99,17 @@ class DatabaseHelper {
     if (kIsWeb) {
       // Sembast : Lecture depuis le store 'plats'
       if (_sembastDb == null) return [];
-      
+
       final store = intMapStoreFactory.store('plats');
       final snapshots = await store.find(_sembastDb!);
-      
+
       // Conversion du format Sembast vers une Map standard
       return snapshots.map((record) => record.value).toList();
     } else {
       // SQLite : Requête SQL standard
       final db = _sqfliteDb;
       if (db == null) return [];
-      
+
       return await db.query('plats');
     }
   }
