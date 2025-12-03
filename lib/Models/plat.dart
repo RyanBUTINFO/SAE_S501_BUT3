@@ -1,5 +1,7 @@
+import 'ingredient_recette.dart'; // IMPORTANT : Assurez-vous d'importer la nouvelle classe
+
 class Plat {
-  String? instructionsText; // <--- AJOUTER CETTE LIGNE
+  // Propriétés de la BDD (finales)
   final int? id;
   final String? nom;
   final String? type;
@@ -17,11 +19,16 @@ class Plat {
   final String? valeurNutritionnelle;
   final double? empreinteCarbone;
 
-  // Attributs additionnels pour l'app
-  String? image;    // alias pour imagePath
-  String? title;    // alias pour nom
-  String? level;    // alias pour type
-  String? context;  // alias pour instructions
+  // Propriété pour la page de détails (non-final, car hydratée après fromMap)
+  // Elle contiendra la liste des ingrédients du plat avec quantité et unité.
+  List<IngredientRecette> ingredientsRecette = []; 
+
+  // Attributs additionnels/alias pour l'app
+  String? instructionsText; // <--- LIGNE EXISTANTE
+  String? image; 
+  String? title; 
+  String? level; 
+  String? context; 
 
   Plat({
     this.id,
@@ -44,19 +51,18 @@ class Plat {
     this.title,
     this.level,
     this.context,
+    // Note: pas besoin d'inclure 'ingredientsRecette' dans le constructeur
+    // car elle est initialisée à une liste vide par défaut.
   });
 
   factory Plat.fromMap(Map<String, dynamic> map) {
-    // Fonction utilitaire pour convertir toute valeur en String? ou null
-    // Cela corrige l'erreur "type 'double' is not a subtype of type 'String?'"
     String? _safeToString(dynamic value) {
       if (value == null) return null;
-      // Si c'est déjà une String, la retourner.
       if (value is String) return value;
-      // Si c'est un nombre (int, double, num), le convertir en String.
       return value.toString();
     }
 
+    // Le 'fromMap' gère uniquement les données provenant de la table 'Plats'
     return Plat(
       id: map['id'] is int ? map['id'] as int : int.tryParse(map['id'].toString()),
       nom: _safeToString(map['nom']),
@@ -76,13 +82,11 @@ class Plat {
           ? map['nombre_etapes'] as int
           : int.tryParse(map['nombre_etapes'].toString()),
       
-      // Les champs TEXTE sont désormais convertis de manière sécurisée
       instructions: _safeToString(map['instructions']),
       methodesCuisson: _safeToString(map['methodes_cuisson']),
       ustensiles: _safeToString(map['ustensiles']),
       imagePath: _safeToString(map['image_path']),
       
-      // Correction critique pour "double" en "String"
       calories: _safeToString(map['calories']),
       
       valeurNutritionnelle: _safeToString(map['valeur_nutritionnelle']),
@@ -116,6 +120,8 @@ class Plat {
       'calories': calories,
       'valeur_nutritionnelle': valeurNutritionnelle,
       'empreinte_carbone': empreinteCarbone,
+      // NOTE: 'ingredientsRecette' n'est PAS inclus dans toMap
+      // car il n'est pas censé être écrit directement dans la table 'Plats'.
     };
   }
 }
