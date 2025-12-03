@@ -67,7 +67,7 @@ class MiaamApp extends StatelessWidget {
           '/splash': (context) => const SplashScreen(),
           '/tutorial': (context) => const TutorialPage(),
           '/main': (context) => const MainNavigator(),
-          '/infos_plat': (context) => const RecipePage(),
+          //'/infos_plat': (context) => const RecipePage(),
           '/preferences': (context) => const PreferencesAlimentairesPage(), 
         },
       ),

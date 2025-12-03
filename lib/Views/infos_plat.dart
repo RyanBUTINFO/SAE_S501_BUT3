@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
+import '../models/plat.dart';
 
+// --- Définitions des Couleurs et Données Statiques ---
 
-// --- Définitions des Couleurs et Données (Rendus accessibles globalement) ---
-
-
-// Couleur principale de l'application (Vert Kaki) - Utilisée pour le fond de la barre d'info et la bannière
 const Color _kAppPrimaryColor = Color(0xFF6B8E23); 
-// ANCIENNE COULEUR BANNIERE SUPPRIMÉE : const Color _kBannerColor = Color(0xFFF09855); 
-const Color _kAccentColor = Color(0xFFEA4C46); // Rouge des boutons et étoiles
-const Color _kBackgroundColor = Color(0xFFFAF6F0); // Couleur de fond très claire
+const Color _kAccentColor = Color(0xFFEA4C46); 
+const Color _kBackgroundColor = Color(0xFFFAF6F0); 
 
 
-// Liste des ingrédients (pour la GridView)
+// Données statiques pour le test (à remplacer plus tard)
 final List<Map<String, dynamic>> _ingredients = const [
   {'name': '100 g Pâtes (Penne)', 'icon': Icons.ramen_dining},
   {'name': '1 Poulet (escalope)', 'icon': Icons.kebab_dining},
@@ -22,8 +19,6 @@ final List<Map<String, dynamic>> _ingredients = const [
   {'name': '1 pinc. Herbes de Provence', 'icon': Icons.grass},
 ];
 
-
-// Liste des étapes de la recette (pour la ListView)
 final List<String> _steps = const [
   "Dans une casserole d'eau bouillante salée, faites cuire les pâtes...",
   "Pendant ce temps, lavez puis coupez les champignons en quartiers.",
@@ -35,8 +30,6 @@ final List<String> _steps = const [
   "Servez les pâtes crémeuses au poulet, champignons & épinards...",
 ];
 
-
-// Données nutritionnelles pour la tuile dépliable
 final List<Map<String, String>> _nutritionalValues = const [
   {'name': 'calories', 'value': '436 kcal'},
   {'name': 'Cholesterol', 'value': '128 mg'},
@@ -45,8 +38,6 @@ final List<Map<String, String>> _nutritionalValues = const [
   {'name': 'Sodium', 'value': '735 mg'},
 ];
 
-
-// Liste des ustensiles pour la nouvelle section dépliable
 final List<String> _utensils = const [
   "Casserole (pour les pâtes)",
   "Poêle anti-adhésive",
@@ -57,12 +48,13 @@ final List<String> _utensils = const [
 ];
 
 
-
 // --- Classe Principale ---
 
 
 class RecipePage extends StatelessWidget {
-  const RecipePage({super.key});
+  final Plat plat; 
+
+  const RecipePage({super.key, required this.plat}); 
 
 
   @override
@@ -71,24 +63,17 @@ class RecipePage extends StatelessWidget {
       backgroundColor: _kBackgroundColor,
       body: CustomScrollView(
         slivers: <Widget>[
-          // L'en-tête de la page
-          _buildSliverAppBar(context), // ← AJOUT DU CONTEXT ICI
+          _buildSliverAppBar(context), 
 
-
-          // Contenu principal sous l'en-tête
           SliverList(
             delegate: SliverChildListDelegate(
               [
-                _buildIntroSection(context),
+                _buildIntroSection(context), 
                 const SizedBox(height: 20),
 
-
-                // Section Info (Préparation/Cuisson/calories) - En vert kaki
                 _buildInfoSection(context),
                 const SizedBox(height: 20),
-
-
-                // Titre Ingrédients centré
+                
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -100,29 +85,25 @@ class RecipePage extends StatelessWidget {
                 ),
                 const SizedBox(height: 10),
 
-
                 _buildIngredientsSection(),
                 const SizedBox(height: 20),
 
-
-                // Titre Recette centré
+                // DEPLACEMENT DU CONTEXTE ICI
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
                     child: Text(
-                      'Recette',
+                      plat.context ?? 'Recette', // Utilise plat.context comme titre de la section recette
+                      textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
                 const SizedBox(height: 10),
 
-
                 _buildStepsSection(),
                 const SizedBox(height: 20),
 
-
-                // Section repliable : Valeurs nutritionnelles
                 _buildExpandableSection(
                   context, 
                   'Valeurs nutritionnelles', 
@@ -132,7 +113,6 @@ class RecipePage extends StatelessWidget {
                 ),
                 const Divider(height: 0),
                 
-                // Section repliable : Ustensiles
                 _buildExpandableSection(
                   context, 
                   'Ustensiles', 
@@ -141,7 +121,6 @@ class RecipePage extends StatelessWidget {
                   _buildUtensilsDetails()
                 ),
                 const Divider(height: 0),
-
 
                 const SizedBox(height: 100),
               ],
@@ -153,7 +132,6 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // Widget pour afficher les détails nutritionnels
   Widget _buildNutritionalDetails() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -180,7 +158,6 @@ class RecipePage extends StatelessWidget {
     );
   }
   
-  // Widget pour afficher la liste des ustensiles
   Widget _buildUtensilsDetails() {
     return Padding(
       padding: const EdgeInsets.only(left: 32.0, right: 16.0, top: 8.0, bottom: 16.0),
@@ -200,8 +177,6 @@ class RecipePage extends StatelessWidget {
   }
 
 
-
-  // En-tête de la page (SliverAppBar) - CORRIGÉ AVEC CONTEXT
   Widget _buildSliverAppBar(BuildContext context) {
     return SliverAppBar(
       backgroundColor: _kAppPrimaryColor.withOpacity(0.9),
@@ -217,9 +192,8 @@ class RecipePage extends StatelessWidget {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            // 1. L'image de la recette
             Image.asset(
-              'assets/images_plats/poulet_pate_cremeuse.jpg',
+              plat.imagePath ?? 'assets/images_plats/placeholder.jpg',
               fit: BoxFit.cover,
               errorBuilder: (context, error, stackTrace) => Container(
                 color: Colors.grey.shade200,
@@ -229,7 +203,6 @@ class RecipePage extends StatelessWidget {
               ),
             ),
             
-            // 2. Rangée des icônes (Croix + Cœur)
             Positioned(
               top: 40,
               left: 10,
@@ -237,15 +210,13 @@ class RecipePage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // ✅ CORRECTION ICI : Bouton de fermeture fonctionnel
                   IconButton(
                     icon: const Icon(Icons.close, color: Colors.white, size: 28),
                     onPressed: () {
-                      Navigator.pop(context); // ← AJOUT DE CETTE LIGNE
+                      Navigator.pop(context); 
                     },
                   ),
                   
-                  // Icône de favori (Cœur)
                   Tooltip(
                     message: 'Ajouter aux favoris',
                     child: IconButton(
@@ -265,15 +236,14 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // Section d'introduction (Titre, Eco-Score, Empreinte Carbone, Origine)
   Widget _buildIntroSection(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0),
       child: Column(
         children: [
-          // Titre principal
+          // TITRE PRINCIPAL
           Text(
-            'Pâtes crémeuses au poulet, champignons & épinards',
+            plat.nom ?? plat.title ?? 'Nom non disponible (TEST)', 
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   fontWeight: FontWeight.w900,
@@ -283,16 +253,18 @@ class RecipePage extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Container(height: 3, width: 80, color: _kAccentColor),
+          // CONTEXTE RETIRE ICI
           const SizedBox(height: 12),
-          const Text(
-            'Les enfants m\'adorent... qui suis-je ?',
+          // Suppression du texte plat.context qui a été déplacé
+          /*
+          Text(
+            plat.context ?? 'Les enfants m\'adorent... qui suis-je ?',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
+            style: const TextStyle(fontSize: 16),
           ),
+          */
           const SizedBox(height: 20),
 
-
-          // Rangée d'indicateurs
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -302,16 +274,16 @@ class RecipePage extends StatelessWidget {
                 color: Color(0xFFC8E6C9),
               ),
               
-              const _DataPill(
-                value: '1.2 kg CO2eq', 
+              _DataPill(
+                value: plat.empreinteCarbone != null ? '${plat.empreinteCarbone!.toStringAsFixed(1)} kg CO2eq' : 'N/A', 
                 label: 'Empreinte Carbone', 
-                color: Color(0xFFF0F4C3),
+                color: const Color(0xFFF0F4C3),
               ),
               
-              const _DataPill(
-                value: 'Italien', 
+              _DataPill(
+                value: plat.origine ?? 'Inconnu', 
                 label: 'Origine', 
-                color: Color(0xFFE1BEE7),
+                color: const Color(0xFFE1BEE7),
               ),
             ],
           ),
@@ -324,24 +296,39 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // Section Préparation/Cuisson/calories - En Vert Kaki
   Widget _buildInfoSection(BuildContext context) {
+    String formatTime(double? time) {
+      if (time == null) return 'N/A';
+      return '${time.round()} min';
+    }
+  
     return Container(
       color: _kAppPrimaryColor.withOpacity(0.9),
       padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 16.0),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _TimePill(icon: Icons.restaurant, time: '5 minutes', label: 'Préparation'),
-          _TimePill(icon: Icons.timer, time: '12 minutes', label: 'Cuisson'),
-          _TimePill(icon: Icons.local_fire_department, time: '751 kcal', label: 'Par portion'),
+          _TimePill(
+            icon: Icons.restaurant, 
+            time: formatTime(plat.tempsPreparation), 
+            label: 'Préparation'
+          ),
+          _TimePill(
+            icon: Icons.timer, 
+            time: formatTime(plat.tempsCuisson), 
+            label: 'Cuisson'
+          ),
+          _TimePill(
+            icon: Icons.local_fire_department, 
+            time: plat.calories ?? 'N/A', 
+            label: 'Par portion'
+          ),
         ],
       ),
     );
   }
 
 
-  // Section des ingrédients (GridView)
   Widget _buildIngredientsSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -359,11 +346,11 @@ class RecipePage extends StatelessWidget {
                   border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.people_alt, size: 18),
-                    SizedBox(width: 5),
-                    Text('1', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Icon(Icons.people_alt, size: 18),
+                    const SizedBox(width: 5),
+                    Text('${plat.nbPersonnes ?? 1}', style: const TextStyle(fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
@@ -393,7 +380,6 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // Section des étapes de la recette (ListView)
   Widget _buildStepsSection() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -403,7 +389,6 @@ class RecipePage extends StatelessWidget {
         itemCount: _steps.length,
         itemBuilder: (context, index) {
           final iconData = index < _ingredients.length ? _ingredients[index]['icon'] : null;
-
 
           return _RecipeStep(
             stepNumber: index + 1,
@@ -416,7 +401,6 @@ class RecipePage extends StatelessWidget {
   }
 
 
-  // Section repliable générique
   Widget _buildExpandableSection(BuildContext context, String title, String subtitle, Widget? trailingWidget, Widget content) {
     return ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -560,10 +544,9 @@ class _RecipeStep extends StatelessWidget {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: Colors.white,
-                child: icon != null
-                    ? Icon(icon, size: 20, color: Colors.grey.shade600)
-                    : Text('$stepNumber', style: const TextStyle(fontWeight: FontWeight.bold)),
+                child: Text('$stepNumber', style: const TextStyle(fontWeight: FontWeight.bold)),
               ),
+              // La ligne verticale s'arrête si c'est la dernière étape
               if (stepNumber < 8)
                 Container(
                   width: 1.5,
@@ -577,11 +560,6 @@ class _RecipeStep extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Étape $stepNumber',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 5),
                 Text(text, style: const TextStyle(fontSize: 15, height: 1.4)),
               ],
             ),

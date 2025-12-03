@@ -7,6 +7,8 @@ import 'search_page.dart';
 import 'favorites_page.dart';
 import 'preferences_alimentaires_page.dart';
 import '../controllers/home_page_controller.dart';
+import '../models/plat.dart'; // Import nécessaire pour le modèle Plat
+import 'infos_plat.dart'; // Assurez-vous que cette page existe
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -118,14 +120,12 @@ class _HomePageState extends State<HomePage> {
                         _buildModeButton(
                           label: 'Mode découverte',
                           isActive: !controller.isRecommendationMode,
-                          // Si je clique ici, ça recharge toujours le mode découverte
                           onPressed: () => controller.setMode(false),
                         ),
                         const SizedBox(width: 8),
                         _buildModeButton(
                           label: 'Mode recommandation',
                           isActive: controller.isRecommendationMode,
-                          // Si je clique ici, ça recharge toujours le mode recommandation
                           onPressed: () => controller.setMode(true),
                         ),
                       ],
@@ -160,7 +160,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   )
                 else ...[
-                  // --- CAROUSEL ---
+                  // --- CAROUSEL (Mise à jour pour passer l'objet plat) ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     child: SizedBox(
@@ -177,6 +177,7 @@ class _HomePageState extends State<HomePage> {
                                   ? "Top ${index + 1} pour vous"
                                   : "Recette du jour";
                               return recipeCard(
+                                plat: plat, // Passons l'objet Plat
                                 image: plat.image ?? 'assets/images/placeholder.png',
                                 title: plat.title ?? 'Sans titre',
                                 level: plat.level ?? 'Moyen',
@@ -223,14 +224,14 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                  // --- GRID ---
+                  // --- GRID (Mise à jour pour passer l'objet plat) ---
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 22),
                     child: gridPlats.isEmpty
                         ? const Center(child: Padding(
-                            padding: EdgeInsets.all(20),
-                            child: Text("C'est tout pour aujourd'hui !"),
-                          ))
+                              padding: EdgeInsets.all(20),
+                              child: Text("C'est tout pour aujourd'hui !"),
+                            ))
                         : GridView.count(
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
@@ -240,6 +241,7 @@ class _HomePageState extends State<HomePage> {
                             childAspectRatio: 0.90,
                             children: gridPlats.map((plat) {
                               return gridRecipeCard(
+                                plat: plat, // Passons l'objet Plat
                                 image: plat.image ?? 'assets/images/placeholder.png',
                                 title: plat.title ?? 'Sans titre',
                                 level: plat.level ?? 'Non spécifié',
@@ -418,7 +420,10 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+  
+  // *** WIDGET DE CARTE CORRIGÉ ***
   Widget recipeCard({
+    required Plat plat, // Paramètre ajouté
     required String image,
     required String title,
     required String level,
@@ -426,7 +431,8 @@ class _HomePageState extends State<HomePage> {
     required BuildContext context,
   }) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/infos_plat'),
+      // CORRECTION: Appel du contrôleur pour la navigation
+      onTap: () => context.read<HomePageController>().onPlatTapped(context, plat),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -508,14 +514,17 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // *** WIDGET DE CARTE GRILLE CORRIGÉ ***
   Widget gridRecipeCard({
+    required Plat plat, // Paramètre ajouté
     required String image,
     required String title,
     required String level,
     required BuildContext context,
   }) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, '/infos_plat'),
+      // CORRECTION: Appel du contrôleur pour la navigation
+      onTap: () => context.read<HomePageController>().onPlatTapped(context, plat),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
