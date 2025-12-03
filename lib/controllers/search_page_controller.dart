@@ -5,8 +5,7 @@ import '../models/plat.dart';
 class SearchPageController extends ChangeNotifier {
   final PlatRepository _repository = PlatRepository();
 
-  List<Plat> allResults = []; // résultats bruts venant du backend
-  List<Plat> results = [];    // résultats filtrés
+  List<Plat> results = [];
   bool isLoading = false;
 
   // --- ÉTATS DES FILTRES (Listes complètes) ---
