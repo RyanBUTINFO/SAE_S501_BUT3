@@ -31,6 +31,8 @@ class _SearchPageState extends State<SearchPage> {
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<SearchPageController>();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8F4),
       // --- APP BAR ---
@@ -67,11 +69,13 @@ class _SearchPageState extends State<SearchPage> {
               },
               decoration: InputDecoration(
                 hintText: 'Une recette, des ingrédients...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                prefixIcon: const Icon(Icons.search),
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
                 suffixIcon: IconButton(
                   // L'icône change de couleur si le panneau filtre est ouvert
                   icon: Icon(Icons.tune, color: _showFilters ? const Color(0xFFE57373) : const Color(0xFF6B8E23)),
@@ -274,9 +278,11 @@ class _SearchPageState extends State<SearchPage> {
         const SizedBox(height: 20),
         Row(
           children: [
-            Icon(icon, color: const Color(0xFF6B8E23), size: 20),
+            Icon(icon, color: Color(0xFF6B8E23)),
             const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+            Text(title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600, fontSize: 15)),
           ],
         ),
         const SizedBox(height: 12),
@@ -382,7 +388,10 @@ class _SuggestionCard extends StatelessWidget {
               children: [
                 Icon(Icons.water_drop, size: 20, color: _getColor()),
                 const SizedBox(width: 6),
-                Text(difficulty, style: TextStyle(color: _getColor(), fontWeight: FontWeight.w500)),
+                Text(difficulty,
+                    style: TextStyle(
+                        color: _getColor(),
+                        fontWeight: FontWeight.w500)),
               ],
             ),
           ],
