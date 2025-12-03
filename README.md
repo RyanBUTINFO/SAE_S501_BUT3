@@ -34,9 +34,9 @@ Miaam est une application mobile intelligente qui aide les utilisateurs à rédu
 ## Architecture et Technologies
 
 - **Frontend (dossier `Front/`)** : Flutter (multiplateforme, interface fluide)
-- **Backend** : Express.js (Node.js)
-- **Base de données** : PostgreSQL
-- **Machine Learning** : Scikit-learn, Pandas
+- **Backend** : Dart
+- **Base de données** : Sqflite
+- **Machine Learning** : Dart
 - **Versioning** : Git & GitHub
 
 ## Parcours Utilisateur
@@ -65,9 +65,7 @@ Miaam est une application mobile intelligente qui aide les utilisateurs à rédu
 
 ## Jeux de données Kaggle utilisés
 
-- [FoodCom Recipes and Reviews](https://www.kaggle.com/datasets/irkaal/foodcom-recipes-and-reviews)
-- [Food Waste Dataset](https://www.kaggle.com/datasets/joebeachcapital/food-waste)
-- [Food Carbon Footprint](https://www.kaggle.com/datasets/francoisrachon/food-carbon-footprint)
+- https://zenodo.org/records/15169428
 
 ## Avantages
 
@@ -78,12 +76,10 @@ Miaam est une application mobile intelligente qui aide les utilisateurs à rédu
 
 ## Inconvénients
 
-- Gestion des ingrédients incomplets ou ambigus
+- Gestion des ingrédients ambigus
 - Optimisation du modèle de recommandation nécessaire
 - Maintien de l’engagement utilisateur (UX)
 - Gestion complexe des listes de favoris multiples et titres personnalisés
 
 ---
-
-### Structure du dépôt
 
