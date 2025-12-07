@@ -34,7 +34,7 @@ Miaam est une application mobile intelligente qui aide les utilisateurs à rédu
 ## Architecture et Technologies
 
 - **Frontend (dossier `Front/`)** : Flutter (multiplateforme, interface fluide)
-- **Backend** : Dart
+- **Backend** : ExpressJS
 - **Base de données** : Sqflite
 - **Machine Learning** : Dart
 - **Versioning** : Git & GitHub
