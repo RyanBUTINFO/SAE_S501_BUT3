@@ -1,14 +1,12 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
-// --- IMPORTS DU PROJET ---
-import 'search_page.dart';
-import 'favorites_page.dart';
+import 'dart:convert'; // Nécessaire pour le rangement
+import 'package:shared_preferences/shared_preferences.dart'; // Nécessaire pour le rangement
+import '../controllers/home_controller.dart';
+import '../models/plat.dart';
+import '../repositories/plat_repository.dart';
+import 'infos_plat.dart';
 import 'preferences_alimentaires_page.dart';
-import '../controllers/home_page_controller.dart';
-import '../models/plat.dart'; // Import nécessaire pour le modèle Plat
-import 'infos_plat.dart'; // Assurez-vous que cette page existe
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -18,558 +16,311 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final PageController _pageController = PageController();
-  late final Stream<DateTime> _timeStream;
+  // Instance unique du repo pour éviter les ouvertures de base de données multiples
+  final PlatRepository _repo = PlatRepository();
 
   @override
   void initState() {
     super.initState();
-    _timeStream = Stream.periodic(const Duration(minutes: 1), (_) => DateTime.now());
-
-    // Charger les données dès l'ouverture de l'app
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomePageController>().loadData();
     });
   }
 
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
+  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (Ajoutée) ---
+  Future<void> _showFolderPicker(BuildContext context, Plat plat) async {
+    final prefs = await SharedPreferences.getInstance();
+    const String keyLists = "miaam_favorite_lists";
+    final String? data = prefs.getString(keyLists);
+
+    List<Map<String, dynamic>> favoriteLists = [];
+    if (data != null) {
+      favoriteLists = (jsonDecode(data) as List)
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    }
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10))),
+              const SizedBox(height: 15),
+              const Text("Ranger dans une liste", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              if (favoriteLists.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(20.0),
+                  child: Text("Vous n'avez pas encore de listes.\nCréez-en une dans l'onglet Favoris !", textAlign: TextAlign.center),
+                )
+              else
+                Flexible(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: favoriteLists.length,
+                    itemBuilder: (context, index) {
+                      final list = favoriteLists[index];
+                      bool dejaPresent = list["plats"].contains(plat.id);
+
+                      return ListTile(
+                        leading: Icon(
+                          dejaPresent ? Icons.check_circle : Icons.folder_open,
+                          color: dejaPresent ? Colors.green : const Color(0xFF6B8E23),
+                        ),
+                        title: Text(list["name"], style: TextStyle(fontWeight: dejaPresent ? FontWeight.bold : FontWeight.normal)),
+                        onTap: () async {
+                          if (!dejaPresent) {
+                            list["plats"].add(plat.id);
+                            await prefs.setString(keyLists, jsonEncode(favoriteLists));
+                            if (context.mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text("Ajouté à : ${list["name"]}"), backgroundColor: const Color(0xFF6B8E23)),
+                              );
+                            }
+                          } else {
+                            Navigator.pop(context);
+                          }
+                        },
+                      );
+                    },
+                  ),
+                ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Color _getDifficultyColor(String? level) {
+    final l = level?.toLowerCase() ?? "";
+    if (l.contains("facile")) return const Color(0xFF6B8E23);
+    if (l.contains("moyen")) return const Color(0xFFFFB300);
+    if (l.contains("difficile")) return const Color(0xFFE57373);
+    return const Color(0xFF6B8E23);
   }
 
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<HomePageController>();
+    const Color greenMiaam = Color(0xFF6B8E23);
+
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8F4),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(context),
+              _buildModeSelector(controller),
 
-      // --- APP BAR ---
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(60),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
-            child: Row(
-              children: [
-                Image.asset(
-                  'assets/images/logo.png',
-                  width: 32,
-                  height: 32,
-                  errorBuilder: (_, __, ___) =>
-                      const Icon(Icons.restaurant, size: 32, color: Color(0xFF6B8E23)),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  "Miaam",
-                  style: TextStyle(
-                      color: Color(0xFF6B8E23),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 22),
-                ),
-                const Spacer(),
-                StreamBuilder<DateTime>(
-                  stream: _timeStream,
-                  builder: (context, snapshot) {
-                    final now = TimeOfDay.now();
-                    return Text(
-                      now.format(context),
-                      style: const TextStyle(color: Colors.black38, fontSize: 14),
-                    );
-                  },
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.settings_outlined,
-                      color: Color(0xFF6B8E23), size: 26),
-                  onPressed: () => _showSettingsMenu(context),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-
-      // --- BODY ---
-      body: Consumer<HomePageController>(
-        builder: (context, controller, child) {
-          final plats = controller.currentPlats;
-          final carouselPlats = plats.length >= 3 ? plats.take(3).toList() : plats;
-          final gridPlats = plats.length > 3 ? plats.skip(3).toList() : [];
-
-          return SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // --- SWITCH MODE BUTTONS ---
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 10,
-                        )
-                      ],
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
-                    child: Row(
-                      children: [
-                        _buildModeButton(
-                          label: 'Mode découverte',
-                          isActive: !controller.isRecommendationMode,
-                          onPressed: () => controller.setMode(false),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildModeButton(
-                          label: 'Mode recommandation',
-                          isActive: controller.isRecommendationMode,
-                          onPressed: () => controller.setMode(true),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // --- CONTENT AREA ---
-                if (controller.isLoading)
-                  const SizedBox(
-                    height: 400,
-                    child: Center(
-                        child: CircularProgressIndicator(
-                            color: Color(0xFF6B8E23))),
-                  )
-                else if (plats.isEmpty)
-                  SizedBox(
-                    height: 300,
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.warning_amber_rounded, size: 40, color: Colors.grey.shade400),
-                          const SizedBox(height: 10),
-                          const Text("Aucune recette trouvée"),
-                          TextButton(
-                            onPressed: () => controller.loadData(),
-                            child: const Text("Réessayer", style: TextStyle(color: Color(0xFF6B8E23))),
-                          )
-                        ],
-                      ),
-                    ),
-                  )
-                else ...[
-                  // --- CAROUSEL (Mise à jour pour passer l'objet plat) ---
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                    child: SizedBox(
-                      height: 180,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          PageView.builder(
-                            controller: _pageController,
-                            itemCount: carouselPlats.length,
-                            itemBuilder: (context, index) {
-                              final plat = carouselPlats[index];
-                              String badge = controller.isRecommendationMode
-                                  ? "Top ${index + 1} pour vous"
-                                  : "Recette du jour";
-                              return recipeCard(
-                                plat: plat, // Passons l'objet Plat
-                                image: plat.image ?? 'assets/images/placeholder.png',
-                                title: plat.title ?? 'Sans titre',
-                                level: plat.level ?? 'Moyen',
-                                badge: badge,
-                                context: context,
-                              );
-                            },
-                          ),
-                          if (carouselPlats.length > 1) ...[
-                            Positioned(
-                              left: -5,
-                              child: IconButton(
-                                icon: const Icon(Icons.chevron_left,
-                                    size: 39, color: Color(0xFF6B8E23)),
-                                onPressed: () => _pageController.previousPage(
-                                    duration: const Duration(milliseconds: 500),
-                                    curve: Curves.ease),
-                              ),
-                            ),
-                            Positioned(
-                              right: -5,
-                              child: IconButton(
-                                icon: const Icon(Icons.chevron_right,
-                                    size: 39, color: Color(0xFF6B8E23)),
-                                onPressed: () => _pageController.nextPage(
-                                    duration: const Duration(milliseconds: 500),
-                                    curve: Curves.ease),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // --- GRID TITLE ---
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-                    child: Text(
-                      controller.isRecommendationMode
-                          ? "Autres suggestions"
-                          : "Les top recettes",
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
-                    ),
-                  ),
-
-                  // --- GRID (Mise à jour pour passer l'objet plat) ---
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 22),
-                    child: gridPlats.isEmpty
-                        ? const Center(child: Padding(
-                              padding: EdgeInsets.all(20),
-                              child: Text("C'est tout pour aujourd'hui !"),
-                            ))
-                        : GridView.count(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            crossAxisCount: 2,
-                            mainAxisSpacing: 16,
-                            crossAxisSpacing: 16,
-                            childAspectRatio: 0.90,
-                            children: gridPlats.map((plat) {
-                              return gridRecipeCard(
-                                plat: plat, // Passons l'objet Plat
-                                image: plat.image ?? 'assets/images/placeholder.png',
-                                title: plat.title ?? 'Sans titre',
-                                level: plat.level ?? 'Non spécifié',
-                                context: context,
-                              );
-                            }).toList(),
-                          ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  // --- WIDGET HELPERS ---
-
-  Widget _buildModeButton({
-    required String label,
-    required bool isActive,
-    required VoidCallback onPressed,
-  }) {
-    return Expanded(
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          backgroundColor: isActive ? const Color(0xFF6B8E23) : const Color(0xFFE5EBE0),
-          foregroundColor: isActive ? Colors.white : const Color(0xFF6B8E23),
-          shape: const StadiumBorder(),
-          padding: const EdgeInsets.symmetric(vertical: 13),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Affiche le menu "Paramètres" en bas de l'écran
-  void _showSettingsMenu(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // --- EN-TÊTE DU MENU ---
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                children: [
-                  Icon(Icons.settings, color: Color(0xFF6B8E23), size: 28),
-                  SizedBox(width: 10),
-                  Text(
-                    'Paramètres',
-                    style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF6B8E23)),
-                  ),
-                ],
-              ),
-            ),
-            const Divider(),
-
-            // --- 1. NOTIFICATIONS ---
-            ListTile(
-              leading: const Icon(Icons.notifications_outlined, color: Color(0xFF6B8E23)),
-              title: const Text('Notifications'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text("Les notifications sont activées !"),
-                    backgroundColor: Color(0xFF6B8E23),
-                    duration: Duration(seconds: 1),
-                  ),
-                );
-              },
-            ),
-
-            // --- 2. PRÉFÉRENCES ALIMENTAIRES (Navigation réelle) ---
-            ListTile(
-              leading: const Icon(Icons.restaurant_menu, color: Color(0xFF6B8E23)),
-              title: const Text('Préférences alimentaires'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                Navigator.pop(ctx); // Ferme le menu
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (_) => const PreferencesAlimentairesPage()),
-                );
-              },
-            ),
-
-            // --- 3. LANGUE ---
-            ListTile(
-              leading: const Icon(Icons.language, color: Color(0xFF6B8E23)),
-              title: const Text('Langue'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                Navigator.pop(ctx);
-                _showLanguageDialog(context); // Ouvre une petite boite de dialogue
-              },
-            ),
-
-            // --- 4. AIDE & SUPPORT ---
-            ListTile(
-              leading: const Icon(Icons.help_outline, color: Color(0xFF6B8E23)),
-              title: const Text('Aide & Support'),
-              trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-              onTap: () {
-                Navigator.pop(ctx);
-                showAboutDialog(
-                  context: context,
-                  applicationName: 'Miaam',
-                  applicationVersion: '1.0.0',
-                  applicationLegalese: '© 2024 Miaam Inc.',
-                  children: const [
-                    Padding(
-                      padding: EdgeInsets.only(top: 15),
-                      child: Text("Besoin d'aide ? Contactez support@miaam.com"),
-                    )
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // --- Petit bonus : Boite de dialogue pour le choix de langue ---
-  void _showLanguageDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text("Choisir la langue"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              title: const Text("Français"),
-              leading: const Text("🇫🇷", style: TextStyle(fontSize: 20)),
-              trailing: const Icon(Icons.check, color: Color(0xFF6B8E23)),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              title: const Text("English"),
-              leading: const Text("🇺🇸", style: TextStyle(fontSize: 20)),
-              onTap: () => Navigator.pop(ctx),
-            ),
-            ListTile(
-              title: const Text("Español"),
-              leading: const Text("🇪🇸", style: TextStyle(fontSize: 20)),
-              onTap: () => Navigator.pop(ctx),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  // *** WIDGET DE CARTE CORRIGÉ ***
-  Widget recipeCard({
-    required Plat plat, // Paramètre ajouté
-    required String image,
-    required String title,
-    required String level,
-    String? badge,
-    required BuildContext context,
-  }) {
-    return GestureDetector(
-      // CORRECTION: Appel du contrôleur pour la navigation
-      onTap: () => context.read<HomePageController>().onPlatTapped(context, plat),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: const Color(0xFF6B8E23), width: 3),
-          image: DecorationImage(
-            image: AssetImage(image),
-            fit: BoxFit.cover,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6B8E23).withOpacity(0.15),
-              blurRadius: 14,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            if (badge != null)
-              Positioned(
-                left: 20,
-                top: 15,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Text(
-                    badge,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w500, fontSize: 13),
-                  ),
-                ),
-              ),
-            Positioned(
-              left: 20,
-              bottom: 26,
-              child: Container(
-                // Ajout d'un petit fond sombre pour que le texte soit lisible sur toute image
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4)
-                ),
-                child: Column(
+              if (controller.isLoading)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(50.0),
+                  child: CircularProgressIndicator(color: greenMiaam),
+                ))
+              else if (controller.currentPlats.isEmpty)
+                const Center(child: Padding(
+                  padding: EdgeInsets.all(40.0),
+                  child: Text("Aucune recette trouvée..."),
+                ))
+              else
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 19,
-                          shadows: [Shadow(color: Colors.black, blurRadius: 4)]),
-                    ),
-                    const SizedBox(height: 5),
-                    Row(
-                      children: [
-                        Icon(Icons.local_fire_department,
-                            size: 17, color: Colors.orange.shade400),
-                        Text(
-                          ' $level',
-                          style: TextStyle(
-                              color: Colors.orange.shade400, 
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14),
+                    _buildSectionTitle(controller.isRecommendationMode 
+                      ? "Recommandé pour vous ✨" 
+                      : "Découvrir de nouvelles saveurs 🌍"),
+                    
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 15,
+                          mainAxisSpacing: 15,
+                          childAspectRatio: 0.82,
                         ),
-                      ],
+                        itemCount: controller.currentPlats.length,
+                        itemBuilder: (context, index) {
+                          return _buildRecipeCardV1(context, controller.currentPlats[index], controller);
+                        },
+                      ),
                     ),
+                    const SizedBox(height: 30),
                   ],
                 ),
-              ),
-            ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Hello,", style: TextStyle(fontSize: 18, color: Colors.black54)),
+              Text("What do you want\nto cook today?", 
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2)),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings_outlined, size: 30, color: Color(0xFF6B8E23)),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PreferencesAlimentairesPage())),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModeSelector(HomePageController controller) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: Container(
+        padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        ),
+        child: Row(
+          children: [
+            _modeButton("Découverte", !controller.isRecommendationMode, () => controller.setMode(false)),
+            _modeButton("Pour vous", controller.isRecommendationMode, () => controller.setMode(true)),
           ],
         ),
       ),
     );
   }
 
-  // *** WIDGET DE CARTE GRILLE CORRIGÉ ***
-  Widget gridRecipeCard({
-    required Plat plat, // Paramètre ajouté
-    required String image,
-    required String title,
-    required String level,
-    required BuildContext context,
-  }) {
+  Widget _modeButton(String label, bool active, VoidCallback onTap) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: active ? const Color(0xFF6B8E23) : Colors.transparent,
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Text(label, textAlign: TextAlign.center, 
+            style: TextStyle(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecipeCardV1(BuildContext context, Plat plat, HomePageController controller) {
     return GestureDetector(
-      // CORRECTION: Appel du contrôleur pour la navigation
-      onTap: () => context.read<HomePageController>().onPlatTapped(context, plat),
+      onTap: () async {
+        await _repo.hydraterIngredients(plat);
+        if (context.mounted) {
+          Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (_) => RecipePage(plat: plat))
+          );
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15),
+          color: const Color(0xFFE5EBE0), 
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(color: const Color(0xFF6B8E23), width: 2),
-          image: DecorationImage(
-            image: AssetImage(image),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              Colors.white.withOpacity(0.65),
-              BlendMode.dstATop,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF6B8E23).withOpacity(0.10),
-              blurRadius: 10,
-            ),
-          ],
         ),
-        child: Stack(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Positioned(
-              left: 16,
-              bottom: 17,
-              right: 16,
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    child: Image.asset(
+                      'assets/images_plats/${plat.id}.webp',
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.asset('assets/images/placeholder.png', fit: BoxFit.cover);
+                      },
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GestureDetector(
+                      onTap: () {
+                        // 1. On vérifie l'état avant
+                        bool wasLiked = controller.isFavorite(plat.id);
+                        
+                        // 2. On toggle (SANS await car ta fonction est void)
+                        controller.toggleFavorite(plat);
+                        
+                        // 3. Si on vient de l'ajouter (il n'était pas aimé avant), on ouvre le menu
+                        if (!wasLiked) {
+                          _showFolderPicker(context, plat);
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          controller.isFavorite(plat.id) ? Icons.favorite : Icons.favorite_border,
+                          color: controller.isFavorite(plat.id) ? Colors.red : Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    title,
-                    maxLines: 2,
+                    plat.nom,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                        color: Colors.black87,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15),
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                   ),
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.water_drop, size: 16, color: Color(0xFF6B8E23)),
+                      Icon(Icons.water_drop, size: 16, color: _getDifficultyColor(plat.cuisine)),
+                      const SizedBox(width: 4),
                       Text(
-                        ' $level',
-                        style: const TextStyle(
-                            color: Color(0xFF6B8E23), fontSize: 13),
+                        plat.cuisine ?? "Facile",
+                        style: TextStyle(
+                          color: _getDifficultyColor(plat.cuisine), 
+                          fontSize: 12, 
+                          fontWeight: FontWeight.bold
+                        ),
                       ),
                     ],
                   ),
@@ -579,6 +330,13 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 15),
+      child: Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
     );
   }
 }
