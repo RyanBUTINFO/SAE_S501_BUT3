@@ -1,9 +1,8 @@
-import 'ingredient_recette.dart'; // IMPORTANT : Assurez-vous d'importer la nouvelle classe
+import 'ingredient_recette.dart';
 
 class Plat {
-  // Propriétés de la BDD (finales)
   final int? id;
-  final String? nom;
+  final String nom;
   final String? type;
   final String? cuisine;
   final String? origine;
@@ -15,28 +14,21 @@ class Plat {
   final String? methodesCuisson;
   final String? ustensiles;
   final String? imagePath;
-  final String? calories;
+  final double? calories;
   final String? valeurNutritionnelle;
   final double? empreinteCarbone;
 
-  // Propriété pour la page de détails (non-final, car hydratée après fromMap)
-  // Elle contiendra la liste des ingrédients du plat avec quantité et unité.
-  List<IngredientRecette> ingredientsRecette = []; 
-
-  // Attributs additionnels/alias pour l'app
-  String? instructionsText; // <--- LIGNE EXISTANTE
-  String? image; 
-  String? title; 
-  String? level; 
-  String? context; 
+  // Champs gérés hors SQL direct (Vecteurs et Relation Ingrédients)
+  List<IngredientRecette> ingredients; 
+  List<double> vector = []; 
 
   Plat({
-    this.id,
-    this.nom,
-    this.type,
-    this.cuisine,
+    this.id, 
+    required this.nom, 
+    this.type, 
+    this.cuisine, 
     this.origine,
-    this.tempsPreparation,
+    this.tempsPreparation, 
     this.tempsCuisson,
     this.nbPersonnes,
     this.nombreEtapes,
@@ -47,81 +39,58 @@ class Plat {
     this.calories,
     this.valeurNutritionnelle,
     this.empreinteCarbone,
-    this.image,
-    this.title,
-    this.level,
-    this.context,
-    // Note: pas besoin d'inclure 'ingredientsRecette' dans le constructeur
-    // car elle est initialisée à une liste vide par défaut.
+    this.ingredients = const [], 
   });
 
   factory Plat.fromMap(Map<String, dynamic> map) {
-    String? _safeToString(dynamic value) {
-      if (value == null) return null;
-      if (value is String) return value;
-      return value.toString();
+    // --- FONCTION INTERNE POUR RECHERCHER UNE CLÉ SANS SE SOUCIER DE LA CASSE ---
+    // (Règle les problèmes de "valeur_nutritionnelle" vs "Valeur_Nutritionnelle")
+    dynamic _get(String key) {
+      final searchKey = key.toLowerCase().trim();
+      for (var entry in map.entries) {
+        if (entry.key.toLowerCase().trim() == searchKey) {
+          return entry.value;
+        }
+      }
+      return null;
     }
 
-    // Le 'fromMap' gère uniquement les données provenant de la table 'Plats'
+    // --- CONVERTISSEURS DE TYPES SÉCURISÉS ---
+    double? _toDouble(dynamic value) {
+      if (value == null) return null;
+      if (value is num) return value.toDouble();
+      return double.tryParse(value.toString());
+    }
+
+    int? _toInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      return int.tryParse(value.toString());
+    }
+
     return Plat(
-      id: map['id'] is int ? map['id'] as int : int.tryParse(map['id'].toString()),
-      nom: _safeToString(map['nom']),
-      type: _safeToString(map['type']),
-      cuisine: _safeToString(map['cuisine']),
-      origine: _safeToString(map['origine']),
-      tempsPreparation: (map['temps_preparation'] is num)
-          ? (map['temps_preparation'] as num).toDouble()
-          : double.tryParse(map['temps_preparation'].toString()),
-      tempsCuisson: (map['temps_cuisson'] is num)
-          ? (map['temps_cuisson'] as num).toDouble()
-          : double.tryParse(map['temps_cuisson'].toString()),
-      nbPersonnes: map['nb_personnes'] is int
-          ? map['nb_personnes'] as int
-          : int.tryParse(map['nb_personnes'].toString()),
-      nombreEtapes: map['nombre_etapes'] is int
-          ? map['nombre_etapes'] as int
-          : int.tryParse(map['nombre_etapes'].toString()),
-      
-      instructions: _safeToString(map['instructions']),
-      methodesCuisson: _safeToString(map['methodes_cuisson']),
-      ustensiles: _safeToString(map['ustensiles']),
-      imagePath: _safeToString(map['image_path']),
-      
-      calories: _safeToString(map['calories']),
-      
-      valeurNutritionnelle: _safeToString(map['valeur_nutritionnelle']),
-      empreinteCarbone: (map['empreinte_carbone'] is num)
-          ? (map['empreinte_carbone'] as num).toDouble()
-          : double.tryParse(map['empreinte_carbone'].toString()),
-          
-      // Initialisation des alias
-      image: _safeToString(map['image_path']),
-      title: _safeToString(map['nom']),
-      level: _safeToString(map['type']),
-      context: _safeToString(map['instructions']),
+      // Mappe 'plat_id' ou 'id' selon ce qui arrive de la base
+      id: _toInt(_get('plat_id') ?? _get('id')),
+      nom: (_get('nom') ?? 'Sans nom').toString(),
+      type: _get('type')?.toString(),
+      cuisine: _get('cuisine')?.toString(),
+      origine: _get('origine')?.toString(),
+      tempsPreparation: _toDouble(_get('temps_preparation')),
+      tempsCuisson: _toDouble(_get('temps_cuisson')),
+      nbPersonnes: _toInt(_get('nb_personnes')),
+      nombreEtapes: _toInt(_get('nombre_etapes')),
+      instructions: _get('instructions')?.toString(),
+      methodesCuisson: _get('methodes_cuisson')?.toString(),
+      ustensiles: _get('ustensiles')?.toString(),
+      imagePath: _get('image_path')?.toString(),
+      calories: _toDouble(_get('calories')),
+      valeurNutritionnelle: _get('valeur_nutritionnelle')?.toString(),
+      empreinteCarbone: _toDouble(_get('empreinte_carbone')),
+      ingredients: [], // Rempli ultérieurement par hydraterIngredients()
     );
   }
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'nom': nom,
-      'type': type,
-      'cuisine': cuisine,
-      'origine': origine,
-      'temps_preparation': tempsPreparation,
-      'temps_cuisson': tempsCuisson,
-      'nb_personnes': nbPersonnes,
-      'nombre_etapes': nombreEtapes,
-      'instructions': instructions,
-      'methodes_cuisson': methodesCuisson,
-      'ustensiles': ustensiles,
-      'image_path': imagePath,
-      'calories': calories,
-      'valeur_nutritionnelle': valeurNutritionnelle,
-      'empreinte_carbone': empreinteCarbone,
-      // NOTE: 'ingredientsRecette' n'est PAS inclus dans toMap
-      // car il n'est pas censé être écrit directement dans la table 'Plats'.
-    };
-  }
+  // Optionnel : Pour faciliter le débuggage dans la console
+  @override
+  String toString() => 'Plat(id: $id, nom: $nom, nutri: $valeurNutritionnelle)';
 }
