@@ -1,187 +1,117 @@
-import '../database/database_helper.dart';
+import 'package:flutter/material.dart';
 import '../models/plat.dart';
-import '../models/ingredient_recette.dart'; // Import pour le modèle enrichi
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'dart:convert'; // Import pour jsonDecode
-//import 'package:sembast/sembast/database.dart'; 
-import 'dart:math';
+import '../repositories/plat_repository.dart';
+import '../services/recommendation_service.dart';
 
-class PlatRepository {
-  final DatabaseHelper _dbHelper = DatabaseHelper();
+class HomePageController extends ChangeNotifier {
+  final PlatRepository _repo = PlatRepository();
+  final RecommendationService _recommendationService = RecommendationService();
 
-  // --- Méthodes existantes ---
+  // --- ÉTATS ---
+  List<Plat> _currentPlats = [];
+  List<Plat> get currentPlats => _currentPlats;
 
-  Future<List<Plat>> getTopPlatsByOrigine(String origine, {int limit = 10}) async {
-    if (kIsWeb) {
-      return [];
-    } else {
-      final db = _dbHelper.sqfliteDb!;
-      final result = await db.query(
-        'plats',
-        where: 'origine LIKE ?',
-        whereArgs: ['%$origine%'],
-        limit: limit,
-      );
-      return result.map((e) => Plat.fromMap(e)).toList();
-    }
+  List<Plat> _favoritePlats = []; // Contient maintenant les plats AVEC leurs vecteurs
+  List<Plat> get favoritePlats => _favoritePlats;
+
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+
+  bool _isRecommendationMode = false;
+  bool get isRecommendationMode => _isRecommendationMode;
+
+  // --- INITIALISATION ---
+  HomePageController() {
+    _initFavorites(); 
   }
 
-  Future<List<Plat>> getRandomPlats({int limit = 10}) async {
-    final db = _dbHelper.sqfliteDb;
-    if (db == null) return [];
+  // --- GESTION DES FAVORIS (VERSION SQLITE ÉVOLUTIVE) ---
+  
+  Future<void> _initFavorites() async {
+    _isLoading = true;
+    notifyListeners();
 
-    final result = await db.query('plats');
-    final random = Random();
-    final shuffled = List.of(result)..shuffle(random);
-
-    return shuffled.take(limit).map((e) {
-      final plat = Plat.fromMap(e);
-      // Alias existants
-      plat.image = plat.imagePath;
-      plat.title = plat.nom;
-      plat.level = plat.type;
-      plat.context = plat.instructions;
-      return plat;
-    }).toList();
-  }
-
-  Future<List<Plat>> searchPlatsByCriteria({
-    required String query,
-    List<String> difficulties = const [],
-    List<String> ingredients = const [],
-    List<String> cookingModes = const [],
-    int limit = 50,
-  }) async {
-    final db = _dbHelper.sqfliteDb;
-    if (db == null) return [];
-
-    String finalWhereClause = '1=1';
-    List<dynamic> finalWhereArgs = [];
-
-    // Logique de recherche : Recherche textuelle
-    if (query.isNotEmpty) {
-      finalWhereClause += ' AND lower(nom) LIKE ?';
-      finalWhereArgs.add('%${query.toLowerCase()}%');
-    }
-
-    // Logique de recherche : Filtre difficulté
-    if (difficulties.isNotEmpty) {
-      final placeholders = List.filled(difficulties.length, 'lower(?)').join(',');
-      finalWhereClause += " AND lower(type) IN ($placeholders)";
-      finalWhereArgs.addAll(difficulties.map((e) => e.toLowerCase()));
-    }
-
-    // Logique de recherche : Filtre mode de cuisson
-    if (cookingModes.isNotEmpty) {
-      List<String> conditions = [];
-      for (var mode in cookingModes) {
-        conditions.add("lower(methodes_cuisson) LIKE ?");
-        finalWhereArgs.add('%${mode.toLowerCase()}%');
-      }
-      if (conditions.isNotEmpty) {
-        finalWhereClause += " AND (${conditions.join(' OR ')})";
-      }
-    }
-
-    // Logique de recherche : Filtre ingrédients (basé sur instructions/description)
-    if (ingredients.isNotEmpty) {
-      List<String> conditions = [];
-      for (var ing in ingredients) {
-        conditions.add("lower(instructions) LIKE ?");
-        finalWhereArgs.add('%${ing.toLowerCase()}%');
-      }
-      if (conditions.isNotEmpty) {
-        finalWhereClause += " AND (${conditions.join(' OR ')})";
-      }
-    }
-
-    // Exécution de la requête
-    try {
-      final result = await db.query(
-        'plats',
-        where: finalWhereClause,
-        whereArgs: finalWhereArgs,
-        limit: limit,
-      );
-
-      return result.map((e) {
-        final plat = Plat.fromMap(e);
-        plat.image = plat.imagePath;
-        plat.title = plat.nom;
-        plat.level = plat.type;
-        plat.context = plat.instructions;
-        return plat;
-      }).toList();
-    } catch (e) {
-      debugPrint("Erreur SQL: $e");
-      return [];
-    }
-  }
-
-  // ----------------------------------------------------------------------
-  // --- NOUVELLE LOGIQUE POUR LA PAGE DE DÉTAILS (RecipePage) ---
-  // ----------------------------------------------------------------------
-
-
-  /// [NOUVEAU] Récupère la liste complète des ingrédients enrichis pour un plat donné
-  Future<List<IngredientRecette>> _getIngredientsForPlat(int platId) async {
-    final db = _dbHelper.sqfliteDb;
-    if (db == null) return [];
-
-    // Requête SQL de Jointure : Plat_ingredient (T1) avec Ingredient (T2)
-    const String sql = '''
-      SELECT 
-        T2.nom, 
-        T1.quantite, 
-        T1.unite 
-      FROM Plat_ingredient T1
-      INNER JOIN Ingredient T2 ON T1.ingredient_id = T2.id
-      WHERE T1.plat_id = ?;
-    ''';
-
-    try {
-      final List<Map<String, dynamic>> result = await db.rawQuery(
-        sql,
-        [platId],
-      );
-
-      // Utilise le factory IngredientRecette.fromMap
-      return result.map((map) => IngredientRecette.fromMap(map)).toList();
-    } catch (e) {
-      debugPrint("Erreur lors de la récupération des ingrédients : $e");
-      return [];
-    }
-  }
-
-
-  /// [NOUVEAU] Prend un objet Plat de base et l'enrichit avec toutes les données complexes 
-  /// requises par la RecipePage (ingrédients, décodage JSON).
-  Future<Plat> enrichirPlatPourDetails(Plat plat) async {
-    // 1. Hydratation des ingrédients
-    if (plat.id != null) {
-      plat.ingredientsRecette = await _getIngredientsForPlat(plat.id!);
-    }
+    // On récupère les favoris avec leurs vecteurs SVD directement depuis SQLite
+    _favoritePlats = await _repo.getFavorisWithVectors();
     
-    // 2. Décoder le JSON pour les ustensiles (si la vue les utilise en liste)
-    if (plat.ustensiles != null && plat.ustensiles!.isNotEmpty) {
-      try {
-        final List<dynamic> ustensilesList = jsonDecode(plat.ustensiles!);
-        // Le décodage est fait, mais la valeur reste dans la propriété String pour l'instant
-      } catch (e) {
-        debugPrint("Erreur de décodage JSON des ustensiles: $e");
-      }
+    await loadData(); // Charge les plats de l'accueil
+  }
+
+  bool isFavorite(int? id) => _favoritePlats.any((p) => p.id == id);
+
+  void toggleFavorite(Plat plat) async {
+    if (plat.id == null) return;
+
+    bool currentlyFavorite = isFavorite(plat.id);
+
+    // 1. Mise à jour dans la base de données (Table 'favoris')
+    await _repo.toggleFavori(plat.id!, !currentlyFavorite);
+
+    // 2. Mise à jour de l'état local pour l'UI
+    if (currentlyFavorite) {
+      _favoritePlats.removeWhere((p) => p.id == plat.id);
+    } else {
+      // On s'assure d'ajouter le plat avec son vecteur pour l'algo
+      _favoritePlats.add(plat);
     }
 
-    // 3. Décoder le JSON pour les valeurs nutritionnelles
-    if (plat.valeurNutritionnelle != null && plat.valeurNutritionnelle!.isNotEmpty) {
-      try {
-        final Map<String, dynamic> nutritionalMap = jsonDecode(plat.valeurNutritionnelle!);
-      } catch (e) {
-        debugPrint("Erreur de décodage JSON nutritionnel: $e");
+    notifyListeners();
+
+    // 3. Si on est en mode recommandation, on recalcule le profil immédiatement
+    if (_isRecommendationMode) {
+      await _loadVectorRecommendations();
+      notifyListeners();
+    }
+  }
+
+  // --- LOGIQUE DE NAVIGATION / MODES ---
+
+  void setMode(bool recommendationMode) {
+    _isRecommendationMode = recommendationMode;
+    loadData();
+  }
+
+  Future<void> loadData() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (_isRecommendationMode) {
+        await _loadVectorRecommendations();
+      } else {
+        await _loadDiscoveryMode();
       }
+    } catch (e) {
+      debugPrint("❌ Erreur dans loadData : $e");
     }
 
-    // L'objet Plat est maintenant enrichi et prêt pour la RecipePage
-    return plat;
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  // Mode Aléatoire / Découverte
+  Future<void> _loadDiscoveryMode() async {
+    List<Plat> all = await _repo.getAllPlatsWithVectors();
+    all.shuffle();
+    _currentPlats = all.take(15).toList();
+  }
+
+  // Mode Recommandation Personnalisée (Évolutif)
+  Future<void> _loadVectorRecommendations() async {
+    List<Plat> allPlats = await _repo.getAllPlatsWithVectors();
+
+    if (_favoritePlats.isEmpty) {
+      // Cold Start : Si aucun favori, on propose du contenu varié
+      allPlats.shuffle();
+      _currentPlats = allPlats.take(15).toList();
+      return;
+    }
+
+    // 1. GÉNÉRATION DU PROFIL : L'algorithme calcule la moyenne des vecteurs des favoris
+    // Cette "cible" évolue à chaque nouveau favori ajouté.
+    List<double> userProfileVector = _recommendationService.computeUserProfileVector(_favoritePlats);
+
+    // 2. MATCHING : On compare ce profil moyen à toute la base de données
+    _currentPlats = _recommendationService.getBestMatches(allPlats, userProfileVector);
   }
 }
