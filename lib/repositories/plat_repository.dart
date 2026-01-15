@@ -1,117 +1,143 @@
-import 'package:flutter/material.dart';
+import '../database/database_helper.dart';
 import '../models/plat.dart';
-import '../repositories/plat_repository.dart';
-import '../services/recommendation_service.dart';
+import '../models/ingredient_recette.dart';
 
-class HomePageController extends ChangeNotifier {
-  final PlatRepository _repo = PlatRepository();
-  final RecommendationService _recommendationService = RecommendationService();
+class PlatRepository {
+  final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  // --- ÉTATS ---
-  List<Plat> _currentPlats = [];
-  List<Plat> get currentPlats => _currentPlats;
-
-  List<Plat> _favoritePlats = []; // Contient maintenant les plats AVEC leurs vecteurs
-  List<Plat> get favoritePlats => _favoritePlats;
-
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  bool _isRecommendationMode = false;
-  bool get isRecommendationMode => _isRecommendationMode;
-
-  // --- INITIALISATION ---
-  HomePageController() {
-    _initFavorites(); 
+  // --- 1. RÉCUPÉRATION CLASSIQUE (Home & Recommandations) ---
+  Future<List<Plat>> getAllPlatsWithVectors() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT p.*, v.* FROM plats p 
+      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+    ''');
+    return maps.map((row) {
+      Plat p = Plat.fromMap(row);
+      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+      return p;
+    }).toList();
   }
 
-  // --- GESTION DES FAVORIS (VERSION SQLITE ÉVOLUTIVE) ---
-  
-  Future<void> _initFavorites() async {
-    _isLoading = true;
-    notifyListeners();
-
-    // On récupère les favoris avec leurs vecteurs SVD directement depuis SQLite
-    _favoritePlats = await _repo.getFavorisWithVectors();
-    
-    await loadData(); // Charge les plats de l'accueil
+  // --- 2. RÉCUPÉRATION PAR IDS (Utilisé pour afficher la liste des favoris) ---
+  Future<List<Plat>> getPlatsByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final String idString = ids.join(',');
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT * FROM plats WHERE plat_id IN ($idString)'
+    );
+    return maps.map((e) => Plat.fromMap(e)).toList();
   }
 
-  bool isFavorite(int? id) => _favoritePlats.any((p) => p.id == id);
+  // --- 3. RECHERCHE FRIGO ---
+  Future<List<Plat>> getPlatsByIngredients(List<int> ingredientIds) async {
+    if (ingredientIds.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final String ids = ingredientIds.join(',');
+    final List<Map<String, dynamic>> res = await db.rawQuery('''
+      SELECT p.*, v.*, COUNT(pi.ingredient_id) as score_frigo
+      FROM plats p
+      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+      INNER JOIN Plat_ingredient pi ON p.plat_id = pi.plat_id
+      WHERE pi.ingredient_id IN ($ids)
+      GROUP BY p.plat_id
+      ORDER BY score_frigo DESC
+      LIMIT 50
+    ''');
+    return res.map((row) {
+      Plat p = Plat.fromMap(row);
+      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+      return p;
+    }).toList();
+  }
 
-  void toggleFavorite(Plat plat) async {
-    if (plat.id == null) return;
+  // --- 4. RECHERCHE CLASSIQUE ---
+  Future<List<Plat>> search(String query, List<String> diffs) async {
+    final db = await _dbHelper.database;
+    String whereClause = "nom LIKE ?";
+    List<dynamic> args = ["%$query%"];
+    if (diffs.isNotEmpty) {
+      String placeholders = List.filled(diffs.length, '?').join(',');
+      whereClause += " AND type IN ($placeholders)";
+      args.addAll(diffs);
+    }
+    final res = await db.query('plats', where: whereClause, whereArgs: args, limit: 50);
+    return res.map((e) => Plat.fromMap(e)).toList();
+  }
 
-    bool currentlyFavorite = isFavorite(plat.id);
+  // --- 5. SUGGESTIONS INGRÉDIENTS ---
+  Future<List<Map<String, dynamic>>> searchIngredients(String query) async {
+    if (query.length < 2) return [];
+    final db = await _dbHelper.database;
+    return await db.query('Ingredient', where: 'nom LIKE ?', whereArgs: ['%$query%'], limit: 20);
+  }
 
-    // 1. Mise à jour dans la base de données (Table 'favoris')
-    await _repo.toggleFavori(plat.id!, !currentlyFavorite);
+  Future<void> hydraterIngredients(Plat plat) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> res = await db.rawQuery('''
+      SELECT i.nom, pi.quantite, pi.unite
+      FROM Plat_ingredient pi
+      JOIN ingredients i ON pi.ingredient_id = i.id
+      WHERE pi.plat_id = ?
+    ''', [plat.id]);
+    plat.ingredients = res.map((m) => IngredientRecette.fromMap(m)).toList();
+  }
 
-    // 2. Mise à jour de l'état local pour l'UI
-    if (currentlyFavorite) {
-      _favoritePlats.removeWhere((p) => p.id == plat.id);
+  // =========================================================
+  // --- NOUVELLES MÉTHODES POUR L'ÉVOLUTION DE L'ALGO ---
+  // =========================================================
+
+  // Étape A : Ajouter/Retirer via le Helper
+  Future<void> toggleFavori(int platId, bool isAdding) async {
+    if (isAdding) {
+      await _dbHelper.addFavori(platId);
     } else {
-      // On s'assure d'ajouter le plat avec son vecteur pour l'algo
-      _favoritePlats.add(plat);
-    }
-
-    notifyListeners();
-
-    // 3. Si on est en mode recommandation, on recalcule le profil immédiatement
-    if (_isRecommendationMode) {
-      await _loadVectorRecommendations();
-      notifyListeners();
+      await _dbHelper.removeFavori(platId);
     }
   }
 
-  // --- LOGIQUE DE NAVIGATION / MODES ---
-
-  void setMode(bool recommendationMode) {
-    _isRecommendationMode = recommendationMode;
-    loadData();
+  // Étape B : Récupérer les IDs pour savoir ce que l'user aime
+  Future<List<int>> getFavorisIds() async {
+    return await _dbHelper.getFavorisIds();
   }
 
-  Future<void> loadData() async {
-    _isLoading = true;
-    notifyListeners();
+  // Étape C : CRUCIAL POUR L'ALGO - Récupérer les plats favoris AVEC leurs vecteurs
+  Future<List<Plat>> getFavorisWithVectors() async {
+    final List<int> ids = await getFavorisIds();
+    if (ids.isEmpty) return [];
 
-    try {
-      if (_isRecommendationMode) {
-        await _loadVectorRecommendations();
-      } else {
-        await _loadDiscoveryMode();
-      }
-    } catch (e) {
-      debugPrint("❌ Erreur dans loadData : $e");
+    final db = await _dbHelper.database;
+    final String idString = ids.join(',');
+
+    // On joint la table plats et plat_vectors pour avoir les 27 dimensions
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT p.*, v.* FROM plats p 
+      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+      WHERE p.plat_id IN ($idString)
+    ''');
+
+    return maps.map((row) {
+      Plat p = Plat.fromMap(row);
+      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+      return p;
+    }).toList();
+  }
+  
+  Future<Plat?> getPlatById(int id) async {
+    // On utilise _dbHelper comme dans tes autres méthodes
+    final db = await _dbHelper.database; 
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'plats',
+      where: 'plat_id = ?', // Correction : c'est plat_id dans ton SQL
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Plat.fromMap(maps.first); // Utilise fromMap comme les autres
     }
-
-    _isLoading = false;
-    notifyListeners();
+    return null;
   }
-
-  // Mode Aléatoire / Découverte
-  Future<void> _loadDiscoveryMode() async {
-    List<Plat> all = await _repo.getAllPlatsWithVectors();
-    all.shuffle();
-    _currentPlats = all.take(15).toList();
-  }
-
-  // Mode Recommandation Personnalisée (Évolutif)
-  Future<void> _loadVectorRecommendations() async {
-    List<Plat> allPlats = await _repo.getAllPlatsWithVectors();
-
-    if (_favoritePlats.isEmpty) {
-      // Cold Start : Si aucun favori, on propose du contenu varié
-      allPlats.shuffle();
-      _currentPlats = allPlats.take(15).toList();
-      return;
-    }
-
-    // 1. GÉNÉRATION DU PROFIL : L'algorithme calcule la moyenne des vecteurs des favoris
-    // Cette "cible" évolue à chaque nouveau favori ajouté.
-    List<double> userProfileVector = _recommendationService.computeUserProfileVector(_favoritePlats);
-
-    // 2. MATCHING : On compare ce profil moyen à toute la base de données
-    _currentPlats = _recommendationService.getBestMatches(allPlats, userProfileVector);
-  }
+  
 }
