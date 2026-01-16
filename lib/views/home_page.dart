@@ -27,7 +27,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (Ajoutée) ---
+  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS ---
   Future<void> _showFolderPicker(BuildContext context, Plat plat) async {
     final prefs = await SharedPreferences.getInstance();
     const String keyLists = "miaam_favorite_lists";
@@ -176,13 +176,15 @@ class _HomePageState extends State<HomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Hello,", style: TextStyle(fontSize: 18, color: Colors.black54)),
-              Text("What do you want\nto cook today?", 
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2)),
-            ],
+          const Expanded( // Ajout de Expanded ici aussi par sécurité pour le texte
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Hello,", style: TextStyle(fontSize: 18, color: Colors.black54)),
+                Text("What do you want\nto cook today?", 
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2)),
+              ],
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.settings_outlined, size: 30, color: Color(0xFF6B8E23)),
@@ -250,19 +252,21 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // --- CORRECTION ICI : Expanded assure que l'image prend l'espace restant ---
             Expanded(
               child: Stack(
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                    child: Image.asset(
-                      'assets/images_plats/${plat.id}.webp',
-                      width: double.infinity,
-                      height: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Image.asset('assets/images/placeholder.png', fit: BoxFit.cover);
-                      },
+                  // Utilisation de Positioned.fill pour forcer l'image à respecter les limites
+                  Positioned.fill(
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                      child: Image.asset(
+                        'assets/images_plats/${plat.id}.webp',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Image.asset('assets/images/placeholder.jpg', fit: BoxFit.cover);
+                        },
+                      ),
                     ),
                   ),
                   Positioned(
@@ -270,13 +274,8 @@ class _HomePageState extends State<HomePage> {
                     right: 8,
                     child: GestureDetector(
                       onTap: () {
-                        // 1. On vérifie l'état avant
                         bool wasLiked = controller.isFavorite(plat.id);
-                        
-                        // 2. On toggle (SANS await car ta fonction est void)
                         controller.toggleFavorite(plat);
-                        
-                        // 3. Si on vient de l'ajouter (il n'était pas aimé avant), on ouvre le menu
                         if (!wasLiked) {
                           _showFolderPicker(context, plat);
                         }
@@ -314,12 +313,16 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Icon(Icons.water_drop, size: 16, color: _getDifficultyColor(plat.cuisine)),
                       const SizedBox(width: 4),
-                      Text(
-                        plat.cuisine ?? "Facile",
-                        style: TextStyle(
-                          color: _getDifficultyColor(plat.cuisine), 
-                          fontSize: 12, 
-                          fontWeight: FontWeight.bold
+                      // Flexible empêche le texte de déborder à droite s'il est trop long
+                      Flexible(
+                        child: Text(
+                          plat.cuisine ?? "Facile",
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: _getDifficultyColor(plat.cuisine), 
+                            fontSize: 12, 
+                            fontWeight: FontWeight.bold
+                          ),
                         ),
                       ),
                     ],
