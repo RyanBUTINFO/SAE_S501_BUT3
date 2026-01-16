@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:convert'; // Nécessaire pour le rangement
-import 'package:shared_preferences/shared_preferences.dart'; // Nécessaire pour le rangement
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../controllers/home_controller.dart';
 import '../models/plat.dart';
 import '../repositories/plat_repository.dart';
@@ -16,7 +16,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Instance unique du repo pour éviter les ouvertures de base de données multiples
   final PlatRepository _repo = PlatRepository();
 
   @override
@@ -27,7 +26,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS ---
+  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (Intacte) ---
   Future<void> _showFolderPicker(BuildContext context, Plat plat) async {
     final prefs = await SharedPreferences.getInstance();
     const String keyLists = "miaam_favorite_lists";
@@ -143,6 +142,9 @@ class _HomePageState extends State<HomePage> {
                       ? "Recommandé pour vous ✨" 
                       : "Découvrir de nouvelles saveurs 🌍"),
                     
+                    // --- LE PANEL A ÉTÉ RETIRÉ D'ICI ---
+                    // C'est maintenant le main.dart qui gère l'affichage via un bouton
+
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: GridView.builder(
@@ -176,7 +178,7 @@ class _HomePageState extends State<HomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Expanded( // Ajout de Expanded ici aussi par sécurité pour le texte
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -252,11 +254,9 @@ class _HomePageState extends State<HomePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- CORRECTION ICI : Expanded assure que l'image prend l'espace restant ---
             Expanded(
               child: Stack(
                 children: [
-                  // Utilisation de Positioned.fill pour forcer l'image à respecter les limites
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
@@ -313,7 +313,6 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Icon(Icons.water_drop, size: 16, color: _getDifficultyColor(plat.cuisine)),
                       const SizedBox(width: 4),
-                      // Flexible empêche le texte de déborder à droite s'il est trop long
                       Flexible(
                         child: Text(
                           plat.cuisine ?? "Facile",
