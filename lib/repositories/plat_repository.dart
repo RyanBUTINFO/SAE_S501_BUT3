@@ -139,5 +139,26 @@ class PlatRepository {
     }
     return null;
   }
+  // --- 6. FILTRAGE (Pour les allergies/exclusions) ---
+  Future<Set<int>> getPlatIdsWithIngredients(List<String> ingredientsList) async {
+    if (ingredientsList.isEmpty) return {};
+    
+    final db = await _dbHelper.database;
+    final Set<int> forbiddenIds = {};
+
+    for (String ing in ingredientsList) {
+      // On cherche les ID des plats qui contiennent cet ingrédient
+      // On utilise LIKE pour trouver "lait" dans "lait de coco" par exemple
+      final List<Map<String, dynamic>> maps = await db.rawQuery('''
+        SELECT DISTINCT pi.plat_id 
+        FROM Plat_ingredient pi
+        JOIN ingredients i ON pi.ingredient_id = i.id
+        WHERE i.nom LIKE ?
+      ''', ['%$ing%']); 
+      
+      forbiddenIds.addAll(maps.map((e) => e['plat_id'] as int));
+    }
+    return forbiddenIds;
+  }
   
 }
