@@ -34,27 +34,56 @@ class RecommendationService {
     return profileVector.map((val) => val / favoris.length).toList();
   }
 
-  List<Plat> getBestMatches(List<Plat> allPlats, List<double> targetVector) {
+  // Modifie la signature pour accepter 'userGoals'
+  List<Plat> getBestMatches(List<Plat> allPlats, List<double> targetVector, List<String> userGoals) {
     if (targetVector.isEmpty) return [];
 
-    // --- DÉBUT DU MONITORING ---
     final stopwatch = Stopwatch()..start();
 
-    // l'algo reste 100% identique ici
     List<Map<String, dynamic>> scoredList = allPlats.map((plat) {
+      // 1. Score de base (Similitude Cosinus)
+      // Cela mesure à quel point le plat ressemble aux favoris (ingrédients, style...)
       double score = calculateCosineSimilarity(targetVector, plat.vector);
+
+      // 2. --- AJUSTEMENT SELON LES OBJECTIFS (BONUS) ---
+      
+      // Bonus : Rapide (< 30 min)
+      if (userGoals.contains('Rapide (<30min)')) {
+        double tempsTotal = (plat.tempsPreparation ?? 0) + (plat.tempsCuisson ?? 0);
+        if (tempsTotal > 0 && tempsTotal <= 30) {
+          score += 0.15; // Bonus de 15%
+        }
+      }
+
+      // Bonus : Faible en calories (< 500 kcal)
+      // Note : On met 9999 si null pour ne pas favoriser par erreur les plats sans info
+      if (userGoals.contains('Faible en calories')) {
+        if ((plat.calories ?? 9999) < 500) {
+          score += 0.10; // Bonus de 10%
+        }
+      }
+
+      // Bonus : Végétarien
+      // On regarde si le type ou le nom contient "Végé"
+      if (userGoals.contains('Végétarien')) {
+         if ((plat.type?.contains("Végé") ?? false) || (plat.nom.contains("Végé"))) {
+           score += 0.20; // Gros bonus de 20%
+         }
+      }
+
       return {'plat': plat, 'score': score};
     }).toList();
 
+    // Tri du plus grand score au plus petit
     scoredList.sort((a, b) => (b['score'] as double).compareTo(a['score'] as double));
 
-    // --- FIN DU MONITORING ---
     stopwatch.stop();
     lastExecutionTimeMs = stopwatch.elapsedMilliseconds;
-
-    // Affichage pour un debug et les futurs rapports
-    print("\n[SAÉ Performance] Temps: ${lastExecutionTimeMs}ms pour ${allPlats.length} plats");
+    
+    // Debug info pour ta soutenance
+    print("[Algo] Temps: ${lastExecutionTimeMs}ms. Top score: ${scoredList.first['score']}");
 
     return scoredList.take(20).map((e) => e['plat'] as Plat).toList();
   }
 }
+
