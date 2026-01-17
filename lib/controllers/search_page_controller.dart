@@ -7,73 +7,59 @@ class SearchPageController extends ChangeNotifier {
 
   List<Plat> results = [];
   bool isLoading = false;
+  
+  // État du Frigo
+  List<Map<String, dynamic>> fridgeIngredients = [];
+  List<Map<String, dynamic>> ingredientSuggestions = [];
 
-  // --- ÉTATS DES FILTRES (Listes complètes) ---
   List<String> selectedDifficulties = [];
-  List<String> selectedIngredients = [];
-  List<String> selectedCookingModes = [];
-  List<String> selectedEcoImpacts = []; // Présent pour l'UI, même si non filtré en SQL pour l'instant
-
   String currentQuery = "";
 
-  /// Met à jour la recherche texte
+  // Chercher des ingrédients pour les ajouter au frigo
+  Future<void> updateIngredientSuggestions(String query) async {
+    ingredientSuggestions = await _repository.searchIngredients(query);
+    notifyListeners();
+  }
+
+  void addToFridge(Map<String, dynamic> ingredient) {
+    if (!fridgeIngredients.any((e) => e['id'] == ingredient['id'])) {
+      fridgeIngredients.add(ingredient);
+      search();
+    }
+  }
+
+  void removeFromFridge(int id) {
+    fridgeIngredients.removeWhere((e) => e['id'] == id);
+    search();
+  }
+
   void setQuery(String query) {
     currentQuery = query;
     search();
   }
 
-  /// Fonction générique pour cocher/décocher un filtre
   void toggleFilter(List<String> list, String value) {
-    if (list.contains(value)) {
-      list.remove(value);
-    } else {
-      list.add(value);
-    }
-    notifyListeners(); // Met à jour l'affichage (couleur verte)
-    search();          // Lance la recherche immédiatement
+    list.contains(value) ? list.remove(value) : list.add(value);
+    notifyListeners();
+    search();
   }
 
-  /// Lance la recherche globale
   Future<void> search() async {
-    // Si tout est vide, on vide la liste
-    if (currentQuery.isEmpty &&
-        selectedDifficulties.isEmpty &&
-        selectedIngredients.isEmpty &&
-        selectedCookingModes.isEmpty &&
-        selectedEcoImpacts.isEmpty) {
-      results = [];
-      notifyListeners();
-      return;
-    }
-
     isLoading = true;
     notifyListeners();
 
-    try {
-      results = await _repository.searchPlatsByCriteria(
-        query: currentQuery,
-        difficulties: selectedDifficulties,
-        ingredients: selectedIngredients,
-        cookingModes: selectedCookingModes,
-        // ecoImpacts: selectedEcoImpacts, // On ne l'envoie pas au repo pour l'instant pour éviter les erreurs
-      );
-    } catch (e) {
-      debugPrint("Erreur recherche : $e");
+    if (fridgeIngredients.isNotEmpty) {
+      // MODE FRIGO : Intersection SQL
+      List<int> ids = fridgeIngredients.map((e) => e['id'] as int).toList();
+      results = await _repository.getPlatsByIngredients(ids);
+    } else if (currentQuery.isNotEmpty || selectedDifficulties.isNotEmpty) {
+      // MODE TEXTE CLASSIQUE
+      results = await _repository.search(currentQuery, selectedDifficulties);
+    } else {
       results = [];
     }
 
     isLoading = false;
     notifyListeners();
-  }
-
-  /// Réinitialise tous les filtres
-  void resetFilters() {
-    selectedDifficulties.clear();
-    selectedIngredients.clear();
-    selectedCookingModes.clear();
-    selectedEcoImpacts.clear();
-    
-    // On garde la recherche textuelle si l'utilisateur a tapé quelque chose
-    search();
   }
 }

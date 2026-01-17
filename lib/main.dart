@@ -1,127 +1,151 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
-
-// --- IMPORTS VIEWS ---
-import 'Views/home_page.dart';
-import 'Views/search_page.dart';
-import 'Views/favorites_page.dart';
-import 'Views/infos_plat.dart';
-import 'Views/splash_screen.dart';
-import 'Views/tutorial_page.dart';
-// RecommendationPage is removed as it is merged into HomePage
-import 'Views/preferences_alimentaires_page.dart'; 
-
-// --- IMPORTS DATA & CONTROLLERS ---
-import 'database/database_helper.dart';
-import 'controllers/home_page_controller.dart';
+import 'controllers/home_controller.dart';
 import 'controllers/search_page_controller.dart';
-// RecommendationController is removed as its logic is merged into HomePageController
+import 'views/home_page.dart';
+import 'views/search_page.dart';
+import 'views/favorites_page.dart';
+import 'views/splash_screen.dart';
+import 'views/tutorial_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  final dbHelper = DatabaseHelper();
-  await dbHelper.initDatabase();
-
-  if (!kIsWeb) {
-    try {
-      final tables = await dbHelper.sqfliteDb!.rawQuery(
-        "SELECT name FROM sqlite_master WHERE type='table';",
-      );
-      print("✅ Tables SQLite trouvées : ${tables.map((t) => t['name']).toList()}");
-    } catch (e) {
-      print("❌ Erreur lors de la vérification des tables : $e");
-    }
-  } else {
-    print("🌐 Base Web initialisée (Sembast)");
-  }
-
-  runApp(const MiaamApp());
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => HomePageController()),
+      ChangeNotifierProvider(create: (_) => SearchPageController()),
+    ],
+    child: const MiaamApp(),
+  ));
 }
 
 class MiaamApp extends StatelessWidget {
   const MiaamApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => HomePageController()),
-        ChangeNotifierProvider(create: (_) => SearchPageController()),
-      ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Miaam',
-        theme: ThemeData(
-          scaffoldBackgroundColor: const Color(0xFFF6F8F4),
-          primaryColor: const Color(0xFF6B8E23),
-          colorScheme: ColorScheme.fromSwatch().copyWith(
-            primary: const Color(0xFF6B8E23),
-            secondary: const Color(0xFFE5EBE0),
-          ),
-        ),
-        
-        initialRoute: '/splash',
-        routes: {
-          '/splash': (context) => const SplashScreen(),
-          '/tutorial': (context) => const TutorialPage(),
-          '/main': (context) => const MainNavigator(),
-          //'/infos_plat': (context) => const RecipePage(),
-          '/preferences': (context) => const PreferencesAlimentairesPage(), 
-        },
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: const Color(0xFF6B8E23),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF6B8E23)),
       ),
+      initialRoute: '/splash',
+      routes: {
+        '/splash': (context) => const SplashScreen(),
+        '/tutorial': (context) => const TutorialPage(),
+        '/main': (context) => const MainNavigator(),
+      },
     );
   }
 }
 
 class MainNavigator extends StatefulWidget {
   const MainNavigator({super.key});
-
   @override
   State<MainNavigator> createState() => _MainNavigatorState();
 }
 
 class _MainNavigatorState extends State<MainNavigator> {
-  int currentIndex = 0;
-
-  final List<Widget> pages = const [
-    HomePage(),
-    SearchPage(),
-    FavoritesPage(),
+  int cur = 0;
+  
+  final List<Widget> _pages = const [
+    HomePage(), 
+    SearchPage(), 
+    FavoritesPage()
   ];
+
+  void _showLogsDialog(BuildContext context) {
+    // On récupère le contrôleur pour afficher les vraies stats
+    final controller = context.read<HomePageController>();
+    
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.speed, color: Colors.blueGrey),
+            SizedBox(width: 10),
+            Text("Monitoring Algo"),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text("Métriques de performance en temps réel :", 
+              style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 20),
+            _buildStatRow("Dernière exécution", "${controller.lastExecutionTime} ms", true),
+            const Divider(),
+            _buildStatRow("Moyenne", "${controller.avgTime.toStringAsFixed(1)} ms", false),
+            _buildStatRow("Min", "${controller.minTime} ms", false),
+            _buildStatRow("Max", "${controller.maxTime} ms", false),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text("Fermer", style: TextStyle(color: Colors.blueGrey)),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, String value, bool isMain) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
+          Text(
+            value, 
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              color: isMain ? const Color(0xFF6B8E23) : Colors.black87,
+              fontSize: isMain ? 18 : 14
+            )
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    // On écoute le contrôleur juste pour savoir si on affiche le bouton
+    // (Optionnel : tu peux enlever le context.watch et le if si tu le veux TOUT le temps)
+    final homeController = context.watch<HomePageController>();
+
     return Scaffold(
-      body: IndexedStack(
-        index: currentIndex,
-        children: pages,
-      ),
+      body: IndexedStack(index: cur, children: _pages),
+      
+      // --- BOUTON DE LOG FLOTTANT (FIXE POUR TOUTE L'APP) ---
+      floatingActionButton: homeController.isRecommendationMode 
+        ? FloatingActionButton(
+            onPressed: () => _showLogsDialog(context),
+            backgroundColor: Colors.blueGrey, // Couleur grise demandée
+            mini: true, // Petit bouton discret
+            child: const Icon(Icons.bar_chart, color: Colors.white),
+          )
+        : null, // Masqué en mode "Découverte" (ou retire le check pour l'avoir toujours)
+        
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-            ),
-          ],
+          boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
         ),
         child: BottomNavigationBar(
-          currentIndex: currentIndex,
+          currentIndex: cur, 
+          selectedItemColor: const Color(0xFF6B8E23),
+          unselectedItemColor: Colors.grey,
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          elevation: 0,
-          selectedItemColor: const Color(0xFF6B8E23),
-          unselectedItemColor: Colors.black38,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
-          onTap: (i) => setState(() => currentIndex = i),
+          onTap: (i) => setState(() => cur = i), 
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Rechercher'),
-            BottomNavigationBarItem(icon: Icon(Icons.favorite_border), label: 'Favoris'),
-          ],
+            BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: "Accueil"),
+            BottomNavigationBarItem(icon: Icon(Icons.search_rounded), label: "Recherche"),
+            BottomNavigationBarItem(icon: Icon(Icons.favorite_rounded), label: "Favoris"),
+          ]
         ),
       ),
     );

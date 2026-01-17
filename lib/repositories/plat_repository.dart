@@ -1,187 +1,143 @@
 import '../database/database_helper.dart';
 import '../models/plat.dart';
-import '../models/ingredient_recette.dart'; // Import pour le modèle enrichi
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
-import 'dart:convert'; // Import pour jsonDecode
-//import 'package:sembast/sembast/database.dart'; 
-import 'dart:math';
+import '../models/ingredient_recette.dart';
 
 class PlatRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
 
-  // --- Méthodes existantes ---
-
-  Future<List<Plat>> getTopPlatsByOrigine(String origine, {int limit = 10}) async {
-    if (kIsWeb) {
-      return [];
-    } else {
-      final db = _dbHelper.sqfliteDb!;
-      final result = await db.query(
-        'plats',
-        where: 'origine LIKE ?',
-        whereArgs: ['%$origine%'],
-        limit: limit,
-      );
-      return result.map((e) => Plat.fromMap(e)).toList();
-    }
-  }
-
-  Future<List<Plat>> getRandomPlats({int limit = 10}) async {
-    final db = _dbHelper.sqfliteDb;
-    if (db == null) return [];
-
-    final result = await db.query('plats');
-    final random = Random();
-    final shuffled = List.of(result)..shuffle(random);
-
-    return shuffled.take(limit).map((e) {
-      final plat = Plat.fromMap(e);
-      // Alias existants
-      plat.image = plat.imagePath;
-      plat.title = plat.nom;
-      plat.level = plat.type;
-      plat.context = plat.instructions;
-      return plat;
+  // --- 1. RÉCUPÉRATION CLASSIQUE (Home & Recommandations) ---
+  Future<List<Plat>> getAllPlatsWithVectors() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT p.*, v.* FROM plats p 
+      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+    ''');
+    return maps.map((row) {
+      Plat p = Plat.fromMap(row);
+      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+      return p;
     }).toList();
   }
 
-  Future<List<Plat>> searchPlatsByCriteria({
-    required String query,
-    List<String> difficulties = const [],
-    List<String> ingredients = const [],
-    List<String> cookingModes = const [],
-    int limit = 50,
-  }) async {
-    final db = _dbHelper.sqfliteDb;
-    if (db == null) return [];
+  // --- 2. RÉCUPÉRATION PAR IDS (Utilisé pour afficher la liste des favoris) ---
+  Future<List<Plat>> getPlatsByIds(List<int> ids) async {
+    if (ids.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final String idString = ids.join(',');
+    final List<Map<String, dynamic>> maps = await db.rawQuery(
+      'SELECT * FROM plats WHERE plat_id IN ($idString)'
+    );
+    return maps.map((e) => Plat.fromMap(e)).toList();
+  }
 
-    String finalWhereClause = '1=1';
-    List<dynamic> finalWhereArgs = [];
+  // --- 3. RECHERCHE FRIGO ---
+  Future<List<Plat>> getPlatsByIngredients(List<int> ingredientIds) async {
+    if (ingredientIds.isEmpty) return [];
+    final db = await _dbHelper.database;
+    final String ids = ingredientIds.join(',');
+    final List<Map<String, dynamic>> res = await db.rawQuery('''
+      SELECT p.*, v.*, COUNT(pi.ingredient_id) as score_frigo
+      FROM plats p
+      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+      INNER JOIN Plat_ingredient pi ON p.plat_id = pi.plat_id
+      WHERE pi.ingredient_id IN ($ids)
+      GROUP BY p.plat_id
+      ORDER BY score_frigo DESC
+      LIMIT 50
+    ''');
+    return res.map((row) {
+      Plat p = Plat.fromMap(row);
+      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+      return p;
+    }).toList();
+  }
 
-    // Logique de recherche : Recherche textuelle
-    if (query.isNotEmpty) {
-      finalWhereClause += ' AND lower(nom) LIKE ?';
-      finalWhereArgs.add('%${query.toLowerCase()}%');
+  // --- 4. RECHERCHE CLASSIQUE ---
+  Future<List<Plat>> search(String query, List<String> diffs) async {
+    final db = await _dbHelper.database;
+    String whereClause = "nom LIKE ?";
+    List<dynamic> args = ["%$query%"];
+    if (diffs.isNotEmpty) {
+      String placeholders = List.filled(diffs.length, '?').join(',');
+      whereClause += " AND type IN ($placeholders)";
+      args.addAll(diffs);
     }
+    final res = await db.query('plats', where: whereClause, whereArgs: args, limit: 50);
+    return res.map((e) => Plat.fromMap(e)).toList();
+  }
 
-    // Logique de recherche : Filtre difficulté
-    if (difficulties.isNotEmpty) {
-      final placeholders = List.filled(difficulties.length, 'lower(?)').join(',');
-      finalWhereClause += " AND lower(type) IN ($placeholders)";
-      finalWhereArgs.addAll(difficulties.map((e) => e.toLowerCase()));
-    }
+  // --- 5. SUGGESTIONS INGRÉDIENTS ---
+  Future<List<Map<String, dynamic>>> searchIngredients(String query) async {
+    if (query.length < 2) return [];
+    final db = await _dbHelper.database;
+    return await db.query('Ingredient', where: 'nom LIKE ?', whereArgs: ['%$query%'], limit: 20);
+  }
 
-    // Logique de recherche : Filtre mode de cuisson
-    if (cookingModes.isNotEmpty) {
-      List<String> conditions = [];
-      for (var mode in cookingModes) {
-        conditions.add("lower(methodes_cuisson) LIKE ?");
-        finalWhereArgs.add('%${mode.toLowerCase()}%');
-      }
-      if (conditions.isNotEmpty) {
-        finalWhereClause += " AND (${conditions.join(' OR ')})";
-      }
-    }
+  Future<void> hydraterIngredients(Plat plat) async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> res = await db.rawQuery('''
+      SELECT i.nom, pi.quantite, pi.unite
+      FROM Plat_ingredient pi
+      JOIN ingredients i ON pi.ingredient_id = i.id
+      WHERE pi.plat_id = ?
+    ''', [plat.id]);
+    plat.ingredients = res.map((m) => IngredientRecette.fromMap(m)).toList();
+  }
 
-    // Logique de recherche : Filtre ingrédients (basé sur instructions/description)
-    if (ingredients.isNotEmpty) {
-      List<String> conditions = [];
-      for (var ing in ingredients) {
-        conditions.add("lower(instructions) LIKE ?");
-        finalWhereArgs.add('%${ing.toLowerCase()}%');
-      }
-      if (conditions.isNotEmpty) {
-        finalWhereClause += " AND (${conditions.join(' OR ')})";
-      }
-    }
+  // =========================================================
+  // --- NOUVELLES MÉTHODES POUR L'ÉVOLUTION DE L'ALGO ---
+  // =========================================================
 
-    // Exécution de la requête
-    try {
-      final result = await db.query(
-        'plats',
-        where: finalWhereClause,
-        whereArgs: finalWhereArgs,
-        limit: limit,
-      );
-
-      return result.map((e) {
-        final plat = Plat.fromMap(e);
-        plat.image = plat.imagePath;
-        plat.title = plat.nom;
-        plat.level = plat.type;
-        plat.context = plat.instructions;
-        return plat;
-      }).toList();
-    } catch (e) {
-      debugPrint("Erreur SQL: $e");
-      return [];
+  // Étape A : Ajouter/Retirer via le Helper
+  Future<void> toggleFavori(int platId, bool isAdding) async {
+    if (isAdding) {
+      await _dbHelper.addFavori(platId);
+    } else {
+      await _dbHelper.removeFavori(platId);
     }
   }
 
-  // ----------------------------------------------------------------------
-  // --- NOUVELLE LOGIQUE POUR LA PAGE DE DÉTAILS (RecipePage) ---
-  // ----------------------------------------------------------------------
-
-
-  /// [NOUVEAU] Récupère la liste complète des ingrédients enrichis pour un plat donné
-  Future<List<IngredientRecette>> _getIngredientsForPlat(int platId) async {
-    final db = _dbHelper.sqfliteDb;
-    if (db == null) return [];
-
-    // Requête SQL de Jointure : Plat_ingredient (T1) avec Ingredient (T2)
-    const String sql = '''
-      SELECT 
-        T2.nom, 
-        T1.quantite, 
-        T1.unite 
-      FROM Plat_ingredient T1
-      INNER JOIN Ingredient T2 ON T1.ingredient_id = T2.id
-      WHERE T1.plat_id = ?;
-    ''';
-
-    try {
-      final List<Map<String, dynamic>> result = await db.rawQuery(
-        sql,
-        [platId],
-      );
-
-      // Utilise le factory IngredientRecette.fromMap
-      return result.map((map) => IngredientRecette.fromMap(map)).toList();
-    } catch (e) {
-      debugPrint("Erreur lors de la récupération des ingrédients : $e");
-      return [];
-    }
+  // Étape B : Récupérer les IDs pour savoir ce que l'user aime
+  Future<List<int>> getFavorisIds() async {
+    return await _dbHelper.getFavorisIds();
   }
 
+  // Étape C : CRUCIAL POUR L'ALGO - Récupérer les plats favoris AVEC leurs vecteurs
+  Future<List<Plat>> getFavorisWithVectors() async {
+    final List<int> ids = await getFavorisIds();
+    if (ids.isEmpty) return [];
 
-  /// [NOUVEAU] Prend un objet Plat de base et l'enrichit avec toutes les données complexes 
-  /// requises par la RecipePage (ingrédients, décodage JSON).
-  Future<Plat> enrichirPlatPourDetails(Plat plat) async {
-    // 1. Hydratation des ingrédients
-    if (plat.id != null) {
-      plat.ingredientsRecette = await _getIngredientsForPlat(plat.id!);
-    }
-    
-    // 2. Décoder le JSON pour les ustensiles (si la vue les utilise en liste)
-    if (plat.ustensiles != null && plat.ustensiles!.isNotEmpty) {
-      try {
-        final List<dynamic> ustensilesList = jsonDecode(plat.ustensiles!);
-        // Le décodage est fait, mais la valeur reste dans la propriété String pour l'instant
-      } catch (e) {
-        debugPrint("Erreur de décodage JSON des ustensiles: $e");
-      }
-    }
+    final db = await _dbHelper.database;
+    final String idString = ids.join(',');
 
-    // 3. Décoder le JSON pour les valeurs nutritionnelles
-    if (plat.valeurNutritionnelle != null && plat.valeurNutritionnelle!.isNotEmpty) {
-      try {
-        final Map<String, dynamic> nutritionalMap = jsonDecode(plat.valeurNutritionnelle!);
-      } catch (e) {
-        debugPrint("Erreur de décodage JSON nutritionnel: $e");
-      }
-    }
+    // On joint la table plats et plat_vectors pour avoir les 27 dimensions
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT p.*, v.* FROM plats p 
+      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+      WHERE p.plat_id IN ($idString)
+    ''');
 
-    // L'objet Plat est maintenant enrichi et prêt pour la RecipePage
-    return plat;
+    return maps.map((row) {
+      Plat p = Plat.fromMap(row);
+      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+      return p;
+    }).toList();
   }
+  
+  Future<Plat?> getPlatById(int id) async {
+    // On utilise _dbHelper comme dans tes autres méthodes
+    final db = await _dbHelper.database; 
+
+    final List<Map<String, dynamic>> maps = await db.query(
+      'plats',
+      where: 'plat_id = ?', // Correction : c'est plat_id dans ton SQL
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Plat.fromMap(maps.first); // Utilise fromMap comme les autres
+    }
+    return null;
+  }
+  
 }
