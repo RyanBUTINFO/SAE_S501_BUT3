@@ -3,6 +3,8 @@ import 'dart:math'; // Nécessaire pour min() et max()
 import '../models/plat.dart';
 import '../repositories/plat_repository.dart';
 import '../services/recommendation_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class HomePageController extends ChangeNotifier {
   final PlatRepository _repo = PlatRepository();
@@ -105,29 +107,48 @@ class HomePageController extends ChangeNotifier {
   }
 
   // Mode Recommandation (C'est ici qu'on mesure)
+  // Dans la classe HomePageController...
+
   Future<void> _loadVectorRecommendations() async {
+    // 1. Charger les préférences (Ingrédients interdits & Objectifs)
+    final prefs = await SharedPreferences.getInstance();
+    
+    List<String> avoidedIngredients = [];
+    if (prefs.getString('avoided_ingredients') != null) {
+      avoidedIngredients = List<String>.from(jsonDecode(prefs.getString('avoided_ingredients')!));
+    }
+    
+    List<String> objectifs = [];
+    if (prefs.getString('objectifs') != null) {
+      objectifs = List<String>.from(jsonDecode(prefs.getString('objectifs')!));
+    }
+
+    // 2. Récupérer TOUS les plats
     List<Plat> allPlats = await _repo.getAllPlatsWithVectors();
 
+    // 3. Appliquer l'exclusion (Si l'utilisateur a des allergies)
+    if (avoidedIngredients.isNotEmpty) {
+      Set<int> forbiddenIds = await _repo.getPlatIdsWithIngredients(avoidedIngredients);
+      // On retire les plats interdits de la liste
+      allPlats.removeWhere((p) => forbiddenIds.contains(p.id));
+    }
+
+    // Gestion du démarrage à froid (Cold Start)
     if (_favoritePlats.isEmpty) {
-      // Cold Start
       allPlats.shuffle();
       _currentPlats = allPlats.take(15).toList();
       return;
     }
 
-    // 1. Profil Utilisateur
+    // 4. Calcul du vecteur & Matching
     List<double> userProfileVector = _recommendationService.computeUserProfileVector(_favoritePlats);
+    
+    // C'EST ICI QUE L'ERREUR DISPARAÎT : On passe maintenant les 3 arguments !
+    _currentPlats = _recommendationService.getBestMatches(allPlats, userProfileVector, objectifs);
 
-    // 2. Matching (L'algo tourne ici)
-    _currentPlats = _recommendationService.getBestMatches(allPlats, userProfileVector);
-
-    // --- 3. RÉCUPÉRATION DES MÉTRIQUES (Mise à jour) ---
+    // 5. Monitoring
     lastExecutionTime = _recommendationService.lastExecutionTimeMs;
-    
-    // On ajoute à l'historique pour les stats
     _executionHistory.add(lastExecutionTime);
-    
-    // On garde un historique raisonnable (ex: 50 dernières mesures)
     if (_executionHistory.length > 50) _executionHistory.removeAt(0);
   }
 }
