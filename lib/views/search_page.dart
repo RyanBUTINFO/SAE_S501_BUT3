@@ -44,6 +44,15 @@ class _SearchPageState extends State<SearchPage> {
                   TextField(
                     controller: _fridgeController,
                     onChanged: (v) => controller.updateIngredientSuggestions(v),
+                    onSubmitted: (value) {
+                      // Quand on appuie sur Entrer
+                      if (controller.ingredientSuggestions.isNotEmpty) {
+                        controller.addToFridge(controller.ingredientSuggestions[0]);
+                        _fridgeController.clear();
+                        controller.ingredientSuggestions = [];
+                        FocusScope.of(context).unfocus();
+                      }
+                    },
                     decoration: InputDecoration(
                       hintText: "Ajouter un ingrédient...",
                       prefixIcon: const Icon(Icons.add_shopping_cart, size: 20),

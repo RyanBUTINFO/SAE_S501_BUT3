@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -17,12 +18,20 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDb() async {
-    String dbPath = join(await getDatabasesPath(), "base_miaam.db");
+    late String dbPath;
     
-    if (!(await databaseExists(dbPath))) {
-      ByteData data = await rootBundle.load("assets/database/base_miaam.db");
-      List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
-      await File(dbPath).writeAsBytes(bytes, flush: true);
+    if (kIsWeb) {
+      // Sur le web, on utilise un chemin simple
+      dbPath = "base_miaam.db";
+    } else {
+      // Sur mobile/desktop
+      dbPath = join(await getDatabasesPath(), "base_miaam.db");
+      
+      if (!(await databaseExists(dbPath))) {
+        ByteData data = await rootBundle.load("assets/database/base_miaam.db");
+        List<int> bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+        await File(dbPath).writeAsBytes(bytes, flush: true);
+      }
     }
 
     // On ouvre la base et on s'assure que la table des favoris existe

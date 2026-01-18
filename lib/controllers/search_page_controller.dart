@@ -49,7 +49,7 @@ class SearchPageController extends ChangeNotifier {
     notifyListeners();
 
     if (fridgeIngredients.isNotEmpty) {
-      // MODE FRIGO : Intersection SQL
+      // MODE FRIGO : afficher les plats contenant au moins certains ingrédients
       List<int> ids = fridgeIngredients.map((e) => e['id'] as int).toList();
       results = await _repository.getPlatsByIngredients(ids);
     } else if (currentQuery.isNotEmpty || selectedDifficulties.isNotEmpty) {

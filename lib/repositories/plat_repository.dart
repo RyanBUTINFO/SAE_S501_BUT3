@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart';
 import '../database/database_helper.dart';
+import '../database/in_memory_db.dart';
 import '../models/plat.dart';
 import '../models/ingredient_recette.dart';
 
@@ -30,26 +32,77 @@ class PlatRepository {
     return maps.map((e) => Plat.fromMap(e)).toList();
   }
 
-  // --- 3. RECHERCHE FRIGO ---
+  // --- 3. RECHERCHE FRIGO (Au moins certains ingrédients) ---
   Future<List<Plat>> getPlatsByIngredients(List<int> ingredientIds) async {
     if (ingredientIds.isEmpty) return [];
-    final db = await _dbHelper.database;
-    final String ids = ingredientIds.join(',');
-    final List<Map<String, dynamic>> res = await db.rawQuery('''
-      SELECT p.*, v.*, COUNT(pi.ingredient_id) as score_frigo
-      FROM plats p
-      INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
-      INNER JOIN Plat_ingredient pi ON p.plat_id = pi.plat_id
-      WHERE pi.ingredient_id IN ($ids)
-      GROUP BY p.plat_id
-      ORDER BY score_frigo DESC
-      LIMIT 50
-    ''');
-    return res.map((row) {
-      Plat p = Plat.fromMap(row);
-      p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
-      return p;
-    }).toList();
+    
+    if (kIsWeb) {
+      // Sur le web, utiliser la BD en mémoire
+      try {
+        await InMemoryDatabase().init();
+        final platMaps = InMemoryDatabase().getPlatsByIngredients(ingredientIds);
+        return platMaps.map((e) => Plat.fromMap(e)).toList();
+      } catch (e) {
+        print('Erreur getPlatsByIngredients (web): $e');
+        return [];
+      }
+    } else {
+      // Sur mobile/desktop, utiliser sqflite
+      final db = await _dbHelper.database;
+      final String ids = ingredientIds.join(',');
+      final List<Map<String, dynamic>> res = await db.rawQuery('''
+        SELECT p.*, v.*, COUNT(pi.ingredient_id) as score_frigo
+        FROM plats p
+        INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+        INNER JOIN Plat_ingredient pi ON p.plat_id = pi.plat_id
+        WHERE pi.ingredient_id IN ($ids)
+        GROUP BY p.plat_id
+        ORDER BY score_frigo DESC
+        LIMIT 50
+      ''');
+      return res.map((row) {
+        Plat p = Plat.fromMap(row);
+        p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+        return p;
+      }).toList();
+    }
+  }
+
+  // --- 3b. RECHERCHE FRIGO (Seulement plats faisables) ---
+  Future<List<Plat>> getPlatsByIngredientsOnly(List<int> ingredientIds) async {
+    if (ingredientIds.isEmpty) return [];
+    
+    if (kIsWeb) {
+      // Sur le web, utiliser la BD en mémoire
+      try {
+        await InMemoryDatabase().init();
+        final platMaps = InMemoryDatabase().getPlatsByIngredientsOnly(ingredientIds);
+        return platMaps.map((e) => Plat.fromMap(e)).toList();
+      } catch (e) {
+        print('Erreur getPlatsByIngredientsOnly (web): $e');
+        return [];
+      }
+    } else {
+      // Sur mobile/desktop, utiliser sqflite
+      final db = await _dbHelper.database;
+      final String ids = ingredientIds.join(',');
+      final List<Map<String, dynamic>> res = await db.rawQuery('''
+        SELECT p.*, v.*
+        FROM plats p
+        INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+        WHERE NOT EXISTS (
+          SELECT 1 FROM Plat_ingredient pi
+          WHERE pi.plat_id = p.plat_id
+          AND pi.ingredient_id NOT IN ($ids)
+        )
+        LIMIT 50
+      ''');
+      return res.map((row) {
+        Plat p = Plat.fromMap(row);
+        p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+        return p;
+      }).toList();
+    }
   }
 
   // --- 4. RECHERCHE CLASSIQUE ---
@@ -68,9 +121,42 @@ class PlatRepository {
 
   // --- 5. SUGGESTIONS INGRÉDIENTS ---
   Future<List<Map<String, dynamic>>> searchIngredients(String query) async {
-    if (query.length < 2) return [];
-    final db = await _dbHelper.database;
-    return await db.query('Ingredient', where: 'nom LIKE ?', whereArgs: ['%$query%'], limit: 20);
+    if (query.length < 1) return [];
+    
+    if (kIsWeb) {
+      // Sur le web, utiliser la BD en mémoire
+      try {
+        await InMemoryDatabase().init();
+        return InMemoryDatabase().searchIngredients(query);
+      } catch (e) {
+        print('Erreur searchIngredients (web): $e');
+        return [];
+      }
+    } else {
+      // Sur mobile/desktop, utiliser sqflite
+      final db = await _dbHelper.database;
+      
+      try {
+        // Essayer avec la table "ingredients" (minuscules)
+        List<Map<String, dynamic>> results = await db.rawQuery(
+          'SELECT id, nom FROM ingredients WHERE nom LIKE ? COLLATE NOCASE LIMIT 20',
+          ['%$query%']
+        );
+        
+        if (results.isEmpty) {
+          // Fallback : essayer avec "Ingredient" (majuscule)
+          results = await db.rawQuery(
+            'SELECT id, nom FROM Ingredient WHERE nom LIKE ? COLLATE NOCASE LIMIT 20',
+            ['%$query%']
+          );
+        }
+        
+        return results;
+      } catch (e) {
+        print('Erreur searchIngredients: $e');
+        return [];
+      }
+    }
   }
 
   Future<void> hydraterIngredients(Plat plat) async {

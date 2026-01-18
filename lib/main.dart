@@ -10,6 +10,7 @@ import 'views/tutorial_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => HomePageController()),
