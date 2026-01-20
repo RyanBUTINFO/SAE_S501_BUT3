@@ -67,20 +67,16 @@ class HomePageController extends ChangeNotifier {
       ? "❌ Retiré des favoris : ${plat.nom} (Total: ${_favoritePlats.length})"
       : "✅ Ajouté aux favoris : ${plat.nom} (Total: ${_favoritePlats.length})");
 
-    notifyListeners();
+    notifyListeners(); // ← Update immédiat du cœur
 
-    // 3. ⚡ RECHARGEMENT IMMÉDIAT si mode recommandation actif
+    // 3. ⚡ UPDATE FLUIDE : Recalcul en arrière-plan sans loading
     if (_isRecommendationMode) {
       debugPrint("🔄 Recalcul des recommandations avec ${_favoritePlats.length} favoris...");
       
-      // ON REMET LE LOADING POUR DONNER UN FEEDBACK VISUEL
-      _isLoading = true;
-      notifyListeners();
-      
+      // PAS de _isLoading = true → Pas de spinner perturbant
       await _loadVectorRecommendations();
       
-      _isLoading = false;
-      notifyListeners();
+      notifyListeners(); // ← Update doux de la grille
       
       debugPrint("✅ Recommandations mises à jour !");
     }
