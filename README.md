@@ -78,15 +78,17 @@ Le moteur de recommandation ne se contente pas de filtres basiques, il utilise d
 
 ## 📄 Licence
 Ce projet est distribué sous licence **MIT**. Voir le fichier `LICENSE` pour plus d'informations.
+## 📱 Aperçu de l'interface
 
-![63783E2B-7AE9-492F-ABA1-E727B6E443CC](https://github.com/user-attachments/assets/34db8201-d984-4989-8584-29920d2c6547)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/34db8201-d984-4989-8584-29920d2c6547" width="250" />
+  <img src="https://github.com/user-attachments/assets/65b8319a-cdfc-4948-a872-3a4ab4c14e6f" width="250" />
+  <img src="https://github.com/user-attachments/assets/1bc84c85-bc34-49fe-a93e-e1c71dd2ffca" width="250" />
+</p>
 
-
-![AF9D1E74-E52A-4CBC-91C0-63440354D898](https://github.com/user-attachments/assets/65b8319a-cdfc-4948-a872-3a4ab4c14e6f)
-
-
-![6D952B98-A78F-4A10-8C3B-E0BD459755F3](https://github.com/user-attachments/assets/1bc84c85-bc34-49fe-a93e-e1c71dd2ffca)
-
-![2E1144E0-14BD-44E4-9498-C746C2E66B2F](https://github.com/user-attachments/assets/3518db5b-1ef8-499f-b13d-aa43b4ca706e)![favori](https://github.com/user-attachments/assets/c8c3a970-1a9b-4baf-a925-cfe7b99cbd62)
-![898E177B-5956-48F5-A115-83EE6E7D3EA5](https://github.com/user-attachments/assets/240ee3d8-1431-4187-81b1-f3df787bf2f4)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/3518db5b-1ef8-499f-b13d-aa43b4ca706e" width="250" />
+  <img src="https://github.com/user-attachments/assets/c8c3a970-1a9b-4baf-a925-cfe7b99cbd62" width="250" />
+  <img src="https://github.com/user-attachments/assets/240ee3d8-1431-4187-81b1-f3df787bf2f4" width="250" />
+</p>
 
