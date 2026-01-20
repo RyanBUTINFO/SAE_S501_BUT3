@@ -197,7 +197,7 @@ class RecipePage extends StatelessWidget {
                   const SizedBox(height: 30),
 
                   // Section Ingrédients
-                  const Text("Ingredients", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text("Ingrédients", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 15),
                   _buildIngredientsList(),
 
@@ -207,6 +207,26 @@ class RecipePage extends StatelessWidget {
                   const Text("Recette", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 20),
                   _buildSteps(plat.instructions),
+                  
+                  const SizedBox(height: 30),
+
+                  // ⚡ SECTION : Valeurs Nutritionnelles (DÉROULANTE)
+                  if (plat.valeurNutritionnelle != null && plat.valeurNutritionnelle!.isNotEmpty) ...[
+                    const Text("Valeurs nutritionnelles", 
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 15),
+                    _buildNutritionInfo(plat.valeurNutritionnelle!),
+                    const SizedBox(height: 30),
+                  ],
+
+                  // ⚡ SECTION : Ustensiles
+                  if (plat.ustensiles != null && plat.ustensiles!.isNotEmpty) ...[
+                    const Text("Ustensiles nécessaires", 
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 15),
+                    _buildUstensilesChips(plat.ustensiles!),
+                  ],
+
                   const SizedBox(height: 100),
                 ],
               ),
@@ -263,5 +283,245 @@ class RecipePage extends StatelessWidget {
         ),
       )),
     );
+  }
+
+  // ⚡ NOUVEAU : Affichage des valeurs nutritionnelles (DÉROULANTE)
+  Widget _buildNutritionInfo(String nutritionJson) {
+    try {
+      // 1. NETTOYAGE MEGA AGRESSIF (CSV a doublé les guillemets)
+      String cleanJson = nutritionJson
+          .replaceAll('""""', '"')        // """" → " (CSV escape)
+          .replaceAll('""', '"')          // "" → "
+          .replaceAll('\\"', '"')         // \" → "
+          .replaceAll("''", "'")          // '' → '
+          .trim();
+      
+      // 2. Parse avec gestion d'erreur
+      Map<String, dynamic> nutrition;
+      try {
+        nutrition = jsonDecode(cleanJson);
+      } catch (e) {
+        // Si le JSON est encore cassé, on fait un parsing manuel
+        return _buildManualParse(cleanJson);
+      }
+      
+      // 3. Traductions
+      const Map<String, String> traductions = {
+        'Protein': 'Protéines',
+        'Carbohydrates': 'Glucides',
+        'Fat': 'Lipides',
+        'Saturated Fat': 'Graisses saturées',
+        'Unsaturated Fat': 'Graisses insaturées',
+        'Fiber': 'Fibres',
+        'Sugar': 'Sucres',
+        'Sodium': 'Sodium',
+        'Cholesterol': 'Cholestérol',
+        'Calories': 'Calories',
+      };
+      
+      // 4. Filtrer les valeurs vides
+      List<MapEntry<String, dynamic>> validEntries = nutrition.entries
+          .where((e) => e.value.toString().trim().isNotEmpty)
+          .toList();
+      
+      if (validEntries.isEmpty) {
+        return const Text("Aucune donnée disponible", 
+          style: TextStyle(color: Colors.grey));
+      }
+      
+      // 5. ExpansionTile déroulante
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF6B8E23).withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: ExpansionTile(
+          title: const Text(
+            "Voir les détails",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF6B8E23),
+              fontSize: 16,
+            ),
+          ),
+          leading: const Icon(
+            Icons.info_outline,
+            color: Color(0xFF6B8E23),
+          ),
+          trailing: const Icon(
+            Icons.arrow_drop_down,
+            color: Color(0xFF6B8E23),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          collapsedShape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          children: validEntries.map((entry) {
+            String nom = traductions[entry.key] ?? entry.key;
+            String valeur = entry.value.toString().trim();
+            
+            return ListTile(
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+              title: Text(
+                nom,
+                style: const TextStyle(fontSize: 15),
+              ),
+              trailing: Text(
+                valeur,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF6B8E23),
+                  fontSize: 15,
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      );
+      
+    } catch (e) {
+      // Fallback : parsing manuel
+      return _buildManualParse(nutritionJson);
+    }
+  }
+
+  // ⚡ PARSING MANUEL si le JSON est trop cassé
+  Widget _buildManualParse(String rawData) {
+    try {
+      // Extraire les paires clé-valeur manuellement avec regex
+      final RegExp pattern = RegExp(r'"([^"]+)":\s*"([^"]*)"');
+      final matches = pattern.allMatches(rawData);
+      
+      if (matches.isEmpty) {
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text(
+            "Format non reconnu",
+            style: TextStyle(color: Colors.grey, fontSize: 13),
+          ),
+        );
+      }
+
+      const Map<String, String> traductions = {
+        'Protein': 'Protéines',
+        'Carbohydrates': 'Glucides',
+        'Fat': 'Lipides',
+        'Saturated Fat': 'Graisses saturées',
+        'Unsaturated Fat': 'Graisses insaturées',
+        'Fiber': 'Fibres',
+        'Sugar': 'Sucres',
+        'Sodium': 'Sodium',
+        'Cholesterol': 'Cholestérol',
+        'Calories': 'Calories',
+      };
+
+      List<Widget> items = [];
+      for (var match in matches) {
+        String key = match.group(1) ?? '';
+        String value = match.group(2) ?? '';
+        
+        if (value.trim().isEmpty) continue;
+        
+        String nom = traductions[key] ?? key;
+        
+        items.add(
+          ListTile(
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+            title: Text(nom, style: const TextStyle(fontSize: 15)),
+            trailing: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF6B8E23),
+                fontSize: 15,
+              ),
+            ),
+          ),
+        );
+      }
+
+      if (items.isEmpty) {
+        return const Text("Aucune donnée valide",
+          style: TextStyle(color: Colors.grey));
+      }
+
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFF6B8E23).withOpacity(0.3)),
+        ),
+        child: ExpansionTile(
+          title: const Text(
+            "Voir les détails",
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF6B8E23),
+              fontSize: 16,
+            ),
+          ),
+          leading: const Icon(Icons.info_outline, color: Color(0xFF6B8E23)),
+          trailing: const Icon(Icons.arrow_drop_down, color: Color(0xFF6B8E23)),
+          children: items,
+        ),
+      );
+      
+    } catch (e) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          "Erreur d'affichage : ${e.toString()}",
+          style: const TextStyle(color: Colors.grey, fontSize: 11),
+        ),
+      );
+    }
+  }
+
+  // ⚡ Affichage des ustensiles
+  Widget _buildUstensilesChips(String ustensilesStr) {
+    try {
+      // Les ustensiles sont stockés comme : ['plat à four', 'casserole', 'four', 'pot']
+      // On remplace les quotes simples par doubles pour le JSON
+      List<dynamic> ustensiles = jsonDecode(ustensilesStr.replaceAll("'", '"'));
+      
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: ustensiles.map((u) {
+          return Chip(
+            label: Text(u.toString()),
+            backgroundColor: const Color(0xFF6B8E23).withOpacity(0.15),
+            avatar: const Icon(Icons.kitchen, size: 18, color: Color(0xFF6B8E23)),
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF6B8E23),
+            ),
+          );
+        }).toList(),
+      );
+    } catch (e) {
+      // Fallback : afficher le texte brut
+      return Text(ustensilesStr, style: const TextStyle(fontSize: 14));
+    }
   }
 }
