@@ -10,13 +10,12 @@ class RecipePage extends StatelessWidget {
 
   const RecipePage({super.key, required this.plat});
 
-  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS ---
+  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (OPTIONNEL) ---
   Future<void> _showFolderPicker(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     const String keyLists = "miaam_favorite_lists";
     final String? data = prefs.getString(keyLists);
 
-    // Si aucune liste n'existe, on ne bloque pas, on peut proposer d'en créer une
     List<Map<String, dynamic>> favoriteLists = [];
     if (data != null) {
       favoriteLists = (jsonDecode(data) as List)
@@ -67,7 +66,7 @@ class RecipePage extends StatelessWidget {
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Ajouté à : ${list["name"]}"), backgroundColor: const Color(0xFF6B8E23)),
+                                SnackBar(content: Text("📁 Ajouté à : ${list["name"]}"), backgroundColor: const Color(0xFF6B8E23)),
                               );
                             }
                           } else {
@@ -118,23 +117,54 @@ class RecipePage extends StatelessWidget {
               Consumer<HomePageController>(
                 builder: (context, controller, child) {
                   bool liked = controller.isFavorite(plat.id!);
-                  return CircleAvatar(
-                    backgroundColor: Colors.white.withOpacity(0.7),
-                    child: IconButton(
-                      icon: Icon(
-                        liked ? Icons.favorite : Icons.favorite_border,
-                        color: liked ? Colors.red : Colors.black,
+                  
+                  return Row(
+                    children: [
+                      // ⚡ Bouton dossier (visible seulement si favori)
+                      if (liked)
+                        CircleAvatar(
+                          backgroundColor: Colors.white.withOpacity(0.7),
+                          child: IconButton(
+                            icon: const Icon(Icons.folder_open, color: Color(0xFF6B8E23)),
+                            onPressed: () => _showFolderPicker(context),
+                          ),
+                        ),
+                      if (liked) const SizedBox(width: 8),
+                      
+                      // Bouton cœur
+                      CircleAvatar(
+                        backgroundColor: Colors.white.withOpacity(0.7),
+                        child: IconButton(
+                          icon: Icon(
+                            liked ? Icons.favorite : Icons.favorite_border,
+                            color: liked ? Colors.red : Colors.black,
+                          ),
+                          onPressed: () {
+                            controller.toggleFavorite(plat);
+                            
+                            // Feedback avec option de rangement
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  liked 
+                                    ? "💔 Retiré des favoris" 
+                                    : "❤️ Ajouté aux favoris !"
+                                ),
+                                duration: const Duration(seconds: 2),
+                                backgroundColor: const Color(0xFF6B8E23),
+                                action: !liked 
+                                  ? SnackBarAction(
+                                      label: "📁 Ranger",
+                                      textColor: Colors.white,
+                                      onPressed: () => _showFolderPicker(context),
+                                    )
+                                  : null,
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                      onPressed: () {
-                        // 1. Action pour l'ALGO (SQLite)
-                        controller.toggleFavorite(plat);
-                        
-                        // 2. Si on vient de LIKER, on ouvre direct le rangement
-                        if (!liked) { 
-                          _showFolderPicker(context);
-                        }
-                      },
-                    ),
+                    ],
                   );
                 },
               ),

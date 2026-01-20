@@ -59,19 +59,30 @@ class HomePageController extends ChangeNotifier {
     // 1. Mise à jour DB
     await _repo.toggleFavori(plat.id!, !currentlyFavorite);
 
-    // 2. Mise à jour État Local
-    if (currentlyFavorite) {
-      _favoritePlats.removeWhere((p) => p.id == plat.id);
-    } else {
-      _favoritePlats.add(plat);
-    }
+    // 2. ⚡ CORRECTION : On RECHARGE les favoris depuis la DB au lieu de les modifier manuellement
+    // Cela garantit qu'on a TOUJOURS les vecteurs complets
+    _favoritePlats = await _repo.getFavorisWithVectors();
+    
+    debugPrint(currentlyFavorite 
+      ? "❌ Retiré des favoris : ${plat.nom} (Total: ${_favoritePlats.length})"
+      : "✅ Ajouté aux favoris : ${plat.nom} (Total: ${_favoritePlats.length})");
 
     notifyListeners();
 
-    // 3. Si mode recommandation actif, on relance le calcul pour voir l'impact temps réel
+    // 3. ⚡ RECHARGEMENT IMMÉDIAT si mode recommandation actif
     if (_isRecommendationMode) {
-      await _loadVectorRecommendations();
+      debugPrint("🔄 Recalcul des recommandations avec ${_favoritePlats.length} favoris...");
+      
+      // ON REMET LE LOADING POUR DONNER UN FEEDBACK VISUEL
+      _isLoading = true;
       notifyListeners();
+      
+      await _loadVectorRecommendations();
+      
+      _isLoading = false;
+      notifyListeners();
+      
+      debugPrint("✅ Recommandations mises à jour !");
     }
   }
 
@@ -107,8 +118,6 @@ class HomePageController extends ChangeNotifier {
   }
 
   // Mode Recommandation (C'est ici qu'on mesure)
-  // Dans la classe HomePageController...
-
   Future<void> _loadVectorRecommendations() async {
     // 1. Charger les préférences (Ingrédients interdits & Objectifs)
     final prefs = await SharedPreferences.getInstance();
@@ -135,18 +144,36 @@ class HomePageController extends ChangeNotifier {
 
     // Gestion du démarrage à froid (Cold Start)
     if (_favoritePlats.isEmpty) {
+      debugPrint("⚠️ Aucun favori → Mode découverte");
       allPlats.shuffle();
       _currentPlats = allPlats.take(15).toList();
       return;
     }
 
-    // 4. Calcul du vecteur & Matching
+    // 4. 🎯 DEBUG : Afficher les favoris pris en compte
+    debugPrint("📊 Calcul avec ${_favoritePlats.length} favoris :");
+    for (var fav in _favoritePlats) {
+      String vectorPreview = fav.vector.length >= 3 
+          ? fav.vector.take(3).toList().toString()
+          : "[]";
+      debugPrint("   - ${fav.nom} (vecteur: $vectorPreview...)");
+    }
+
+    // 5. Calcul du vecteur & Matching
     List<double> userProfileVector = _recommendationService.computeUserProfileVector(_favoritePlats);
     
-    // C'EST ICI QUE L'ERREUR DISPARAÎT : On passe maintenant les 3 arguments !
+    // 🎯 DEBUG : Afficher le profil généré
+    debugPrint("🧬 Profil utilisateur généré : ${userProfileVector.take(5).toList()}...");
+    
     _currentPlats = _recommendationService.getBestMatches(allPlats, userProfileVector, objectifs);
 
-    // 5. Monitoring
+    // 6. 🎯 DEBUG : Afficher les top recommandations
+    debugPrint("🏆 Top 5 recommandations :");
+    for (var i = 0; i < 5 && i < _currentPlats.length; i++) {
+      debugPrint("   ${i+1}. ${_currentPlats[i].nom}");
+    }
+
+    // 7. Monitoring
     lastExecutionTime = _recommendationService.lastExecutionTimeMs;
     _executionHistory.add(lastExecutionTime);
     if (_executionHistory.length > 50) _executionHistory.removeAt(0);

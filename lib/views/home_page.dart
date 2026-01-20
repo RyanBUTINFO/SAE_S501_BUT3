@@ -26,7 +26,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (Intacte) ---
+  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (Optionnel) ---
   Future<void> _showFolderPicker(BuildContext context, Plat plat) async {
     final prefs = await SharedPreferences.getInstance();
     const String keyLists = "miaam_favorite_lists";
@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("Ajouté à : ${list["name"]}"), backgroundColor: const Color(0xFF6B8E23)),
+                                SnackBar(content: Text("📁 Ajouté à : ${list["name"]}"), backgroundColor: const Color(0xFF6B8E23)),
                               );
                             }
                           } else {
@@ -141,9 +141,6 @@ class _HomePageState extends State<HomePage> {
                     _buildSectionTitle(controller.isRecommendationMode 
                       ? "Recommandé pour vous ✨" 
                       : "Découvrir de nouvelles saveurs 🌍"),
-                    
-                    // --- LE PANEL A ÉTÉ RETIRÉ D'ICI ---
-                    // C'est maintenant le main.dart qui gère l'affichage via un bouton
 
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -158,7 +155,7 @@ class _HomePageState extends State<HomePage> {
                         ),
                         itemCount: controller.currentPlats.length,
                         itemBuilder: (context, index) {
-                          return _buildRecipeCardV1(context, controller.currentPlats[index], controller);
+                          return _buildRecipeCardV2(context, controller.currentPlats[index], controller);
                         },
                       ),
                     ),
@@ -234,7 +231,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildRecipeCardV1(BuildContext context, Plat plat, HomePageController controller) {
+  // ========== VERSION AMÉLIORÉE : Séparation Favoris / Dossiers ==========
+  Widget _buildRecipeCardV2(BuildContext context, Plat plat, HomePageController controller) {
     return GestureDetector(
       onTap: () async {
         await _repo.hydraterIngredients(plat);
@@ -264,7 +262,7 @@ class _HomePageState extends State<HomePage> {
                         'assets/images_plats/${plat.id}.webp',
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
-                          return Image.asset('assets/images/placeholder.jpg', fit: BoxFit.cover);
+                          return Image.asset('assets/images/placeholder.png', fit: BoxFit.cover);
                         },
                       ),
                     ),
@@ -272,26 +270,65 @@ class _HomePageState extends State<HomePage> {
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: GestureDetector(
-                      onTap: () {
-                        bool wasLiked = controller.isFavorite(plat.id);
-                        controller.toggleFavorite(plat);
-                        if (!wasLiked) {
-                          _showFolderPicker(context, plat);
-                        }
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
-                          shape: BoxShape.circle,
+                    child: Row(
+                      children: [
+                        // ⚡ NOUVEAU : Bouton dossier (visible seulement si favori)
+                        if (controller.isFavorite(plat.id))
+                          GestureDetector(
+                            onTap: () => _showFolderPicker(context, plat),
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              margin: const EdgeInsets.only(right: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.folder_open,
+                                color: Color(0xFF6B8E23),
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        // Bouton cœur (action principale)
+                        GestureDetector(
+                          onTap: () {
+                            controller.toggleFavorite(plat);
+                            
+                            // Feedback visuel simple
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  controller.isFavorite(plat.id) 
+                                    ? "❤️ Ajouté aux favoris !" 
+                                    : "💔 Retiré des favoris"
+                                ),
+                                duration: const Duration(seconds: 1),
+                                backgroundColor: const Color(0xFF6B8E23),
+                                action: controller.isFavorite(plat.id) 
+                                  ? SnackBarAction(
+                                      label: "📁 Ranger",
+                                      textColor: Colors.white,
+                                      onPressed: () => _showFolderPicker(context, plat),
+                                    )
+                                  : null,
+                              ),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              controller.isFavorite(plat.id) ? Icons.favorite : Icons.favorite_border,
+                              color: controller.isFavorite(plat.id) ? Colors.red : Colors.grey,
+                              size: 20,
+                            ),
+                          ),
                         ),
-                        child: Icon(
-                          controller.isFavorite(plat.id) ? Icons.favorite : Icons.favorite_border,
-                          color: controller.isFavorite(plat.id) ? Colors.red : Colors.grey,
-                          size: 20,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ],

@@ -21,17 +21,51 @@ class RecommendationService {
     return dotProduct / (sqrt(normA) * sqrt(normB));
   }
 
+  // ========== CORRECTION PRINCIPALE ==========
   List<double> computeUserProfileVector(List<Plat> favoris) {
     if (favoris.isEmpty) return [];
+    
+    // ⚡ FILTRE : On ne garde que les plats avec un vecteur valide
+    List<Plat> validFavoris = favoris.where((p) => p.vector.length == 27).toList();
+    
+    if (validFavoris.isEmpty) {
+      print("⚠️ Aucun favori n'a de vecteur valide !");
+      return [];
+    }
+    
+    if (validFavoris.length < favoris.length) {
+      print("⚠️ ${favoris.length - validFavoris.length} favori(s) ignoré(s) (pas de vecteur)");
+    }
+    
     List<double> profileVector = List.filled(27, 0.0);
-    for (var plat in favoris) {
-      if (plat.vector.length == 27) {
-        for (int i = 0; i < 27; i++) {
-          profileVector[i] += plat.vector[i];
-        }
+    
+    // 1. SOMME PONDÉRÉE des vecteurs
+    // Les favoris récents comptent plus (évolution des goûts)
+    for (var idx = 0; idx < validFavoris.length; idx++) {
+      var plat = validFavoris[idx];
+      
+      // Pondération : les derniers favoris ajoutés comptent 10% de plus à chaque fois
+      // Exemple : 1er favori = poids 1.0, 2ème = 1.1, 3ème = 1.2, etc.
+      double weight = 1.0 + (idx * 0.1);
+      
+      for (int i = 0; i < 27; i++) {
+        profileVector[i] += plat.vector[i] * weight;
       }
     }
-    return profileVector.map((val) => val / favoris.length).toList();
+    
+    // 2. NORMALISATION par la norme L2 (pour avoir un vecteur unitaire)
+    // Cela préserve les directions fortes tout en évitant l'explosion des valeurs
+    double norm = 0.0;
+    for (int i = 0; i < 27; i++) {
+      norm += pow(profileVector[i], 2);
+    }
+    norm = sqrt(norm);
+    
+    // Si la norme est nulle (cas extrême), on retourne un vecteur vide
+    if (norm == 0) return List.filled(27, 0.0);
+    
+    // Normalisation finale
+    return profileVector.map((val) => val / norm).toList();
   }
 
   // Modifie la signature pour accepter 'userGoals'
@@ -86,4 +120,3 @@ class RecommendationService {
     return scoredList.take(20).map((e) => e['plat'] as Plat).toList();
   }
 }
-
