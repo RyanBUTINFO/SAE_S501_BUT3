@@ -17,6 +17,11 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final PlatRepository _repo = PlatRepository();
+  
+  // Palette de couleurs Modern Organic
+  final Color kOliveColor = const Color(0xFF6B8E23);
+  final Color kBgColor = const Color(0xFFFBFBFA);
+  final Color kDeepGreen = const Color(0xFF2D3319);
 
   @override
   void initState() {
@@ -26,7 +31,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // --- LOGIQUE DE RANGEMENT DANS LES DOSSIERS (Optionnel) ---
+  // --- LOGIQUE DOSSIERS (GARDEE) ---
   Future<void> _showFolderPicker(BuildContext context, Plat plat) async {
     final prefs = await SharedPreferences.getInstance();
     const String keyLists = "miaam_favorite_lists";
@@ -72,7 +77,7 @@ class _HomePageState extends State<HomePage> {
                       return ListTile(
                         leading: Icon(
                           dejaPresent ? Icons.check_circle : Icons.folder_open,
-                          color: dejaPresent ? Colors.green : const Color(0xFF6B8E23),
+                          color: dejaPresent ? Colors.green : kOliveColor,
                         ),
                         title: Text(list["name"], style: TextStyle(fontWeight: dejaPresent ? FontWeight.bold : FontWeight.normal)),
                         onTap: () async {
@@ -82,7 +87,7 @@ class _HomePageState extends State<HomePage> {
                             if (context.mounted) {
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text("📁 Ajouté à : ${list["name"]}"), backgroundColor: const Color(0xFF6B8E23)),
+                                SnackBar(content: Text("📁 Ajouté à : ${list["name"]}"), backgroundColor: kOliveColor),
                               );
                             }
                           } else {
@@ -101,69 +106,54 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Color _getDifficultyColor(String? level) {
-    final l = level?.toLowerCase() ?? "";
-    if (l.contains("facile")) return const Color(0xFF6B8E23);
-    if (l.contains("moyen")) return const Color(0xFFFFB300);
-    if (l.contains("difficile")) return const Color(0xFFE57373);
-    return const Color(0xFF6B8E23);
-  }
-
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<HomePageController>();
-    const Color greenMiaam = Color(0xFF6B8E23);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8F4),
+      backgroundColor: kBgColor,
       body: SafeArea(
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildHeader(context),
-              _buildModeSelector(controller),
+        child: CustomScrollView( // Plus fluide pour le scroll
+          slivers: [
+            // --- HEADER ---
+            SliverToBoxAdapter(child: _buildHeader(context)),
 
-              if (controller.isLoading)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(50.0),
-                  child: CircularProgressIndicator(color: greenMiaam),
-                ))
-              else if (controller.currentPlats.isEmpty)
-                const Center(child: Padding(
-                  padding: EdgeInsets.all(40.0),
-                  child: Text("Aucune recette trouvée..."),
-                ))
-              else
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle(controller.isRecommendationMode 
-                      ? "Recommandé pour vous ✨" 
-                      : "Découvrir de nouvelles saveurs 🌍"),
+            // --- SELECTOR ---
+            SliverToBoxAdapter(child: _buildModeSelector(controller)),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                          childAspectRatio: 0.82,
-                        ),
-                        itemCount: controller.currentPlats.length,
-                        itemBuilder: (context, index) {
-                          return _buildRecipeCardV2(context, controller.currentPlats[index], controller);
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                  ],
+            // --- CONTENU ---
+            if (controller.isLoading)
+              const SliverFillRemaining(child: Center(child: CircularProgressIndicator(color: Color(0xFF6B8E23))))
+            else if (controller.currentPlats.isEmpty)
+              const SliverFillRemaining(child: Center(child: Text("Aucune recette trouvée...")))
+            else ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 25, 24, 15),
+                  child: Text(
+                    controller.isRecommendationMode ? "Recommandé pour vous ✨" : "Découvrir de nouvelles saveurs 🌍",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: kDeepGreen),
+                  ),
                 ),
-            ],
-          ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 18,
+                    mainAxisSpacing: 22,
+                    childAspectRatio: 0.76,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) => _buildRecipeCardV2(context, controller.currentPlats[index], controller),
+                    childCount: controller.currentPlats.length,
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 30)),
+            ]
+          ],
         ),
       ),
     );
@@ -171,23 +161,27 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.fromLTRB(24, 30, 24, 20),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Hello,", style: TextStyle(fontSize: 18, color: Colors.black54)),
-                Text("What do you want\nto cook today?", 
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, height: 1.2)),
+                Text("Bonjour ! 👋", style: TextStyle(fontSize: 16, color: kDeepGreen.withOpacity(0.5))),
+                const SizedBox(height: 4),
+                Text("On sauve quoi\naujourd'hui ?", 
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: kDeepGreen, height: 1.1, letterSpacing: -0.5)),
               ],
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined, size: 30, color: Color(0xFF6B8E23)),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PreferencesAlimentairesPage())),
+          Container(
+            decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: Colors.grey.shade200)),
+            child: IconButton(
+              icon: Icon(Icons.settings_outlined, size: 24, color: kOliveColor),
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PreferencesAlimentairesPage())),
+            ),
           )
         ],
       ),
@@ -196,13 +190,13 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildModeSelector(HomePageController controller) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding: const EdgeInsets.all(4),
+        padding: const EdgeInsets.all(5),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+          borderRadius: BorderRadius.circular(35),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           children: [
@@ -218,124 +212,85 @@ class _HomePageState extends State<HomePage> {
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 250),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: active ? const Color(0xFF6B8E23) : Colors.transparent,
-            borderRadius: BorderRadius.circular(25),
+            color: active ? kOliveColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(30),
           ),
           child: Text(label, textAlign: TextAlign.center, 
-            style: TextStyle(color: active ? Colors.white : Colors.grey, fontWeight: FontWeight.bold)),
+            style: TextStyle(color: active ? Colors.white : Colors.grey.shade500, fontWeight: FontWeight.bold)),
         ),
       ),
     );
   }
 
-  // ========== VERSION AMÉLIORÉE : Séparation Favoris / Dossiers ==========
   Widget _buildRecipeCardV2(BuildContext context, Plat plat, HomePageController controller) {
+    bool isFav = controller.isFavorite(plat.id);
+    
     return GestureDetector(
       onTap: () async {
         await _repo.hydraterIngredients(plat);
         if (context.mounted) {
-          Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (_) => RecipePage(plat: plat))
-          );
+          Navigator.push(context, MaterialPageRoute(builder: (_) => RecipePage(plat: plat)));
         }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFE5EBE0), 
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFF6B8E23), width: 2),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8)),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Image Area
             Expanded(
+              flex: 5,
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-                      child: Image.asset(
-                        'assets/images_plats/${plat.id}.webp',
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Image.asset('assets/images/placeholder.png', fit: BoxFit.cover);
-                        },
+                    child: Container(
+                      margin: const EdgeInsets.all(8),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(18),
+                        child: Image.asset(
+                          'assets/images_plats/${plat.id}.webp',
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Image.asset('assets/images/placeholder.png', fit: BoxFit.cover),
+                        ),
                       ),
                     ),
                   ),
+                  // Boutons Flottants
                   Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Row(
+                    top: 15,
+                    right: 15,
+                    child: Column(
                       children: [
-                        // ⚡ NOUVEAU : Bouton dossier (visible seulement si favori)
-                        if (controller.isFavorite(plat.id))
+                        GestureDetector(
+                          onTap: () => controller.toggleFavorite(plat),
+                          child: _circleIcon(isFav ? Icons.favorite : Icons.favorite_border, isFav ? Colors.red : kOliveColor),
+                        ),
+                        if (isFav) ...[
+                          const SizedBox(height: 8),
                           GestureDetector(
                             onTap: () => _showFolderPicker(context, plat),
-                            child: Container(
-                              padding: const EdgeInsets.all(6),
-                              margin: const EdgeInsets.only(right: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.folder_open,
-                                color: Color(0xFF6B8E23),
-                                size: 18,
-                              ),
-                            ),
+                            child: _circleIcon(Icons.folder_open, kOliveColor),
                           ),
-                        // Bouton cœur (action principale)
-                        GestureDetector(
-                          onTap: () {
-                            controller.toggleFavorite(plat);
-                            
-                            // Feedback visuel simple
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  controller.isFavorite(plat.id) 
-                                    ? "❤️ Ajouté aux favoris !" 
-                                    : "💔 Retiré des favoris"
-                                ),
-                                duration: const Duration(seconds: 1),
-                                backgroundColor: const Color(0xFF6B8E23),
-                                action: controller.isFavorite(plat.id) 
-                                  ? SnackBarAction(
-                                      label: "📁 Ranger",
-                                      textColor: Colors.white,
-                                      onPressed: () => _showFolderPicker(context, plat),
-                                    )
-                                  : null,
-                              ),
-                            );
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              shape: BoxShape.circle,
-                            ),
-                            child: Icon(
-                              controller.isFavorite(plat.id) ? Icons.favorite : Icons.favorite_border,
-                              color: controller.isFavorite(plat.id) ? Colors.red : Colors.grey,
-                              size: 20,
-                            ),
-                          ),
-                        ),
+                        ]
                       ],
                     ),
                   ),
                 ],
               ),
             ),
+            // Info Area
             Padding(
-              padding: const EdgeInsets.all(10.0),
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -343,24 +298,16 @@ class _HomePageState extends State<HomePage> {
                     plat.nom,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: kDeepGreen),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.water_drop, size: 16, color: _getDifficultyColor(plat.cuisine)),
+                      Icon(Icons.timer_outlined, size: 14, color: Colors.grey.shade400),
                       const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          plat.cuisine ?? "Facile",
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: _getDifficultyColor(plat.cuisine), 
-                            fontSize: 12, 
-                            fontWeight: FontWeight.bold
-                          ),
-                        ),
-                      ),
+                      Text("15 min", style: TextStyle(color: Colors.grey.shade500, fontSize: 11, fontWeight: FontWeight.w500)),
+                      const Spacer(),
+                      const Text("🌿", style: TextStyle(fontSize: 12)),
                     ],
                   ),
                 ],
@@ -372,10 +319,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 15),
-      child: Text(title, style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold)),
+  Widget _circleIcon(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(6),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 4)],
+      ),
+      child: Icon(icon, color: color, size: 18),
     );
   }
 }

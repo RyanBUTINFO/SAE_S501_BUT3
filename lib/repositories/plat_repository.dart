@@ -1,7 +1,8 @@
+import 'package:flutter/foundation.dart';
 import '../database/database_helper.dart';
+import '../database/in_memory_db.dart';
 import '../models/plat.dart';
 import '../models/ingredient_recette.dart';
-import 'package:flutter/foundation.dart';
 
 class PlatRepository {
   final DatabaseHelper _dbHelper = DatabaseHelper();
@@ -19,20 +20,18 @@ class PlatRepository {
       return maps.map((row) {
         Plat p = Plat.fromMap(row);
         
-        // ⚠️ VÉRIFICATION : Est-ce que les colonnes v0...v26 existent ?
+        // ⚡ Vérification de sécurité pour les vecteurs
         try {
           p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
         } catch (e) {
-          debugPrint("❌ ERREUR : Impossible de lire le vecteur pour ${p.nom} (ID: ${p.id})");
-          debugPrint("   Colonnes disponibles : ${row.keys.toList()}");
-          p.vector = []; // Vecteur vide par défaut
+          if (kDebugMode) print("⚠️ Vecteur manquant pour ${p.nom}");
+          p.vector = [];
         }
         
         return p;
       }).toList();
     } catch (e) {
-      debugPrint("❌ ERREUR SQL dans getAllPlatsWithVectors : $e");
-      debugPrint("   → Vérifie que la table 'plat_vectors' existe dans la base de données");
+      if (kDebugMode) print("❌ Erreur getAllPlatsWithVectors: $e");
       return [];
     }
   }
@@ -48,37 +47,100 @@ class PlatRepository {
     return maps.map((e) => Plat.fromMap(e)).toList();
   }
 
-  // --- 3. RECHERCHE FRIGO ---
+  // --- 3. RECHERCHE FRIGO (Au moins certains ingrédients) ---
   Future<List<Plat>> getPlatsByIngredients(List<int> ingredientIds) async {
     if (ingredientIds.isEmpty) return [];
-    final db = await _dbHelper.database;
-    final String ids = ingredientIds.join(',');
     
-    try {
-      final List<Map<String, dynamic>> res = await db.rawQuery('''
-        SELECT p.*, v.*, COUNT(pi.ingredient_id) as score_frigo
-        FROM plats p
-        INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
-        INNER JOIN Plat_ingredient pi ON p.plat_id = pi.plat_id
-        WHERE pi.ingredient_id IN ($ids)
-        GROUP BY p.plat_id
-        ORDER BY score_frigo DESC
-        LIMIT 50
-      ''');
+    if (kIsWeb) {
+      // 🌐 Sur le web, utiliser la BD en mémoire (travail de Kevin)
+      try {
+        await InMemoryDatabase().init();
+        final platMaps = InMemoryDatabase().getPlatsByIngredients(ingredientIds);
+        return platMaps.map((e) => Plat.fromMap(e)).toList();
+      } catch (e) {
+        if (kDebugMode) print('Erreur getPlatsByIngredients (web): $e');
+        return [];
+      }
+    } else {
+      // 📱 Sur mobile/desktop, utiliser sqflite
+      final db = await _dbHelper.database;
+      final String ids = ingredientIds.join(',');
       
-      return res.map((row) {
-        Plat p = Plat.fromMap(row);
-        try {
-          p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
-        } catch (e) {
-          debugPrint("⚠️ Vecteur manquant pour ${p.nom}");
-          p.vector = [];
-        }
-        return p;
-      }).toList();
-    } catch (e) {
-      debugPrint("❌ ERREUR dans getPlatsByIngredients : $e");
-      return [];
+      try {
+        final List<Map<String, dynamic>> res = await db.rawQuery('''
+          SELECT p.*, v.*, COUNT(pi.ingredient_id) as score_frigo
+          FROM plats p
+          INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+          INNER JOIN Plat_ingredient pi ON p.plat_id = pi.plat_id
+          WHERE pi.ingredient_id IN ($ids)
+          GROUP BY p.plat_id
+          ORDER BY score_frigo DESC
+          LIMIT 50
+        ''');
+        
+        return res.map((row) {
+          Plat p = Plat.fromMap(row);
+          try {
+            p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+          } catch (e) {
+            if (kDebugMode) print("⚠️ Vecteur manquant pour ${p.nom}");
+            p.vector = [];
+          }
+          return p;
+        }).toList();
+      } catch (e) {
+        if (kDebugMode) print("❌ Erreur getPlatsByIngredients: $e");
+        return [];
+      }
+    }
+  }
+
+  // --- 3b. RECHERCHE FRIGO (Seulement plats faisables) - Ajout de Kevin ---
+  Future<List<Plat>> getPlatsByIngredientsOnly(List<int> ingredientIds) async {
+    if (ingredientIds.isEmpty) return [];
+    
+    if (kIsWeb) {
+      // 🌐 Sur le web
+      try {
+        await InMemoryDatabase().init();
+        final platMaps = InMemoryDatabase().getPlatsByIngredientsOnly(ingredientIds);
+        return platMaps.map((e) => Plat.fromMap(e)).toList();
+      } catch (e) {
+        if (kDebugMode) print('Erreur getPlatsByIngredientsOnly (web): $e');
+        return [];
+      }
+    } else {
+      // 📱 Sur mobile/desktop
+      final db = await _dbHelper.database;
+      final String ids = ingredientIds.join(',');
+      
+      try {
+        final List<Map<String, dynamic>> res = await db.rawQuery('''
+          SELECT p.*, v.*
+          FROM plats p
+          INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
+          WHERE NOT EXISTS (
+            SELECT 1 FROM Plat_ingredient pi
+            WHERE pi.plat_id = p.plat_id
+            AND pi.ingredient_id NOT IN ($ids)
+          )
+          LIMIT 50
+        ''');
+        
+        return res.map((row) {
+          Plat p = Plat.fromMap(row);
+          try {
+            p.vector = List.generate(27, (j) => (row['v$j'] as num).toDouble());
+          } catch (e) {
+            if (kDebugMode) print("⚠️ Vecteur manquant pour ${p.nom}");
+            p.vector = [];
+          }
+          return p;
+        }).toList();
+      } catch (e) {
+        if (kDebugMode) print("❌ Erreur getPlatsByIngredientsOnly: $e");
+        return [];
+      }
     }
   }
 
@@ -87,20 +149,55 @@ class PlatRepository {
     final db = await _dbHelper.database;
     String whereClause = "nom LIKE ?";
     List<dynamic> args = ["%$query%"];
+    
     if (diffs.isNotEmpty) {
       String placeholders = List.filled(diffs.length, '?').join(',');
       whereClause += " AND type IN ($placeholders)";
       args.addAll(diffs);
     }
+    
     final res = await db.query('plats', where: whereClause, whereArgs: args, limit: 50);
     return res.map((e) => Plat.fromMap(e)).toList();
   }
 
   // --- 5. SUGGESTIONS INGRÉDIENTS ---
   Future<List<Map<String, dynamic>>> searchIngredients(String query) async {
-    if (query.length < 2) return [];
-    final db = await _dbHelper.database;
-    return await db.query('Ingredient', where: 'nom LIKE ?', whereArgs: ['%$query%'], limit: 20);
+    if (query.length < 1) return [];
+    
+    if (kIsWeb) {
+      // 🌐 Sur le web (travail de Kevin)
+      try {
+        await InMemoryDatabase().init();
+        return InMemoryDatabase().searchIngredients(query);
+      } catch (e) {
+        if (kDebugMode) print('Erreur searchIngredients (web): $e');
+        return [];
+      }
+    } else {
+      // 📱 Sur mobile/desktop
+      final db = await _dbHelper.database;
+      
+      try {
+        // Essayer avec la table "ingredients" (minuscules)
+        List<Map<String, dynamic>> results = await db.rawQuery(
+          'SELECT id, nom FROM ingredients WHERE nom LIKE ? COLLATE NOCASE LIMIT 20',
+          ['%$query%']
+        );
+        
+        if (results.isEmpty) {
+          // Fallback : essayer avec "Ingredient" (majuscule)
+          results = await db.rawQuery(
+            'SELECT id, nom FROM Ingredient WHERE nom LIKE ? COLLATE NOCASE LIMIT 20',
+            ['%$query%']
+          );
+        }
+        
+        return results;
+      } catch (e) {
+        if (kDebugMode) print('Erreur searchIngredients: $e');
+        return [];
+      }
+    }
   }
 
   Future<void> hydraterIngredients(Plat plat) async {
@@ -115,7 +212,7 @@ class PlatRepository {
   }
 
   // =========================================================
-  // --- MÉTHODES POUR L'ÉVOLUTION DE L'ALGO ---
+  // --- MÉTHODES POUR L'ALGO (Notre travail) ---
   // =========================================================
 
   Future<void> toggleFavori(int platId, bool isAdding) async {
@@ -130,7 +227,7 @@ class PlatRepository {
     return await _dbHelper.getFavorisIds();
   }
 
-  // ⚡ VERSION CORRIGÉE AVEC DEBUG
+  // ⚡ VERSION AMÉLIORÉE avec debug
   Future<List<Plat>> getFavorisWithVectors() async {
     final List<int> ids = await getFavorisIds();
     if (ids.isEmpty) return [];
@@ -138,10 +235,9 @@ class PlatRepository {
     final db = await _dbHelper.database;
     final String idString = ids.join(',');
 
-    debugPrint("🔍 Chargement des favoris (IDs: $idString)");
+    if (kDebugMode) print("🔍 Chargement des favoris (IDs: $idString)");
 
     try {
-      // On joint la table plats et plat_vectors pour avoir les 27 dimensions
       final List<Map<String, dynamic>> maps = await db.rawQuery('''
         SELECT p.*, v.* FROM plats p 
         INNER JOIN plat_vectors v ON p.plat_id = v.plat_id
@@ -149,36 +245,38 @@ class PlatRepository {
       ''');
 
       if (maps.isEmpty) {
-        debugPrint("⚠️ Aucun plat trouvé avec ces IDs !");
+        if (kDebugMode) print("⚠️ Aucun plat trouvé avec ces IDs !");
         return [];
       }
 
       return maps.map((row) {
         Plat p = Plat.fromMap(row);
         
-        // ⚡ VÉRIFICATION CRITIQUE : Le vecteur est-il présent ?
         try {
           p.vector = List.generate(27, (j) {
             final val = row['v$j'];
-            if (val == null) {
-              throw Exception("Colonne v$j est null");
-            }
+            if (val == null) throw Exception("Colonne v$j est null");
             return (val as num).toDouble();
           });
           
-          debugPrint("   ✅ ${p.nom} → Vecteur OK (${p.vector.take(3).toList()}...)");
+          if (kDebugMode) {
+            print("   ✅ ${p.nom} → Vecteur OK (${p.vector.take(3).toList()}...)");
+          }
         } catch (e) {
-          debugPrint("   ❌ ${p.nom} → VECTEUR MANQUANT !");
-          debugPrint("      Erreur : $e");
-          debugPrint("      Colonnes : ${row.keys.take(10).toList()}...");
+          if (kDebugMode) {
+            print("   ❌ ${p.nom} → VECTEUR MANQUANT !");
+            print("      Erreur : $e");
+          }
           p.vector = [];
         }
         
         return p;
       }).toList();
     } catch (e) {
-      debugPrint("❌ ERREUR SQL dans getFavorisWithVectors : $e");
-      debugPrint("   → La table 'plat_vectors' existe-t-elle ?");
+      if (kDebugMode) {
+        print("❌ ERREUR SQL dans getFavorisWithVectors : $e");
+        print("   → La table 'plat_vectors' existe-t-elle ?");
+      }
       return [];
     }
   }
