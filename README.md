@@ -1,85 +1,80 @@
-# Miaam – SAE BUT3
+# 🥗 Miaam — SAE BUT3
 
-## Présentation
-
-Miaam est une application mobile intelligente qui aide les utilisateurs à réduire leur gaspillage alimentaire. L’application recommande des recettes pertinentes en fonction des ingrédients disponibles à la maison et calcule l’empreinte carbone de chaque plat pour favoriser des choix durables.
-
-## Équipe
-
-- Ayoub Jemaa
-- Wajdi Ben Ouirane
-- Kevin Rodrigues
-- Mouhammed Diop
-- Ryan Agin
-- Ciffedinne Mahdjoub
-
-## Thématique & Objectifs
-
-- Réduction du gaspillage alimentaire via une recommandation intelligente de recettes.
-- Alignement avec l’ODD 12 (Consommation et production responsables).
-- Sensibilisation à l’impact écologique des choix alimentaires.
-
-## Fonctionnalités principales
-
-- Saisie des ingrédients disponibles (ex : riz, œuf, carotte).
-- Filtres de recherche : origine géographique, type salé/sucré, barre de recherche.
-- Recommandation de recettes personnalisées et pertinentes depuis les datasets Kaggle.
-- Affichage des recettes avec :
-  - Estimation de l’empreinte carbone
-  - Méthode de préparation et liste d’ustensiles nécessaires
-  - Favoris personnalisés et listes enregistrées
-  - Historique des recettes préférées
-- Interface intuitive, moderne et personnalisable
-
-## Architecture et Technologies
-
-- **Frontend (dossier `Front/`)** : Flutter (multiplateforme, interface fluide)
-- **Backend** : ExpressJS
-- **Base de données** : Sqflite
-- **Machine Learning** : Dart
-- **Versioning** : Git & GitHub
-
-## Parcours Utilisateur
-
-1. Page d’accueil : Tutoriel vidéo
-2. Saisie des ingrédients ou reprise de la dernière action
-3. Mode découverte / personnalisé : Filtres et barre de recherche
-4. Page des favoris : Listes et titres personnalisés
-
-## Maquette & Design
-
-- Thème visuel : Vert kaki
-- Pages principales :
-  - Accueil (tutoriel vidéo)
-  - Formulaire de saisie
-  - Mode découverte/personnalisé
-  - Favoris
-
-## Modélisation & Structure BDD
-
-- Diagramme de cas d’utilisation : Saisie, filtrage, favoris
-- Diagramme de classe : Recette, Utilisateur, Ingrédient, Favori
-- Diagramme de séquence : Recommandation, Enregistrement
-- Tables principales : utilisateurs, recettes, ingrédients, favoris, listes personnalisées
-- Dénormalisation pour optimiser les performances des requêtes
-
-## Jeux de données Kaggle utilisés
-
-- https://zenodo.org/records/15169428
-
-## Avantages
-
-- Impact environnemental concret et éducatif
-- Application enrichissable avec de nouvelles sources
-- Compatibilité avec les données ouvertes Kaggle
-- Interface adaptative et parcours utilisateur fluide
-
-## Inconvénients
-
-- Gestion des ingrédients ambigus
-- Optimisation du modèle de recommandation nécessaire
-- Maintien de l’engagement utilisateur (UX)
-- Gestion complexe des listes de favoris multiples et titres personnalisés
+> **Réduction du gaspillage & Cuisine durable** > Une application mobile intelligente alignée avec l’**ODD 12** (Consommation et production responsables).
 
 ---
 
+## 📝 Présentation
+Miaam est une solution mobile conçue pour lutter contre le gaspillage alimentaire à l'échelle individuelle. L'application transforme les contraintes du quotidien (restes de frigo) en opportunités culinaires, tout en sensibilisant l'utilisateur à son **empreinte carbone**.
+
+---
+
+## 👥 L'Équipe
+* **Ayoub Jemaa** | **Wajdi Ben Ouirane** | **Kevin Rodrigues**
+* **Mouhammed Diop** | **Ryan Agin** | **Ciffedinne Mahdjoub**
+
+---
+
+## 🎯 Thématique & Objectifs
+L'application s'inscrit dans une démarche de **développement durable** avec trois objectifs majeurs :
+1. **Éco-responsabilité :** Réduction du gaspillage via une recommandation intelligente de recettes basée sur les stocks réels.
+2. **Sensibilisation :** Éducation à l'impact écologique via le calcul de l'empreinte carbone des plats.
+3. **Optimisation :** Offrir une expérience utilisateur fluide pour transformer la gestion des restes en réflexe quotidien.
+
+---
+
+## 🧠 Intelligence Artificielle & Algorithmes
+Le moteur de recommandation ne se contente pas de filtres basiques, il utilise des concepts avancés de Data Science :
+* **Modèle Vectoriel :** Représentation mathématique des ingrédients et recettes pour calculer des scores de similarité.
+* **SVD (Singular Value Decomposition) :** Algorithme de décomposition matricielle utilisé pour traiter les caractéristiques latentes et optimiser la pertinence des suggestions.
+* **Hybridation :** Mix entre filtrage par contenu (ingrédients disponibles) et préférences utilisateurs (historique et favoris).
+
+---
+
+## ✨ Fonctionnalités Principales
+* **"Miracle du Frigo" :** Saisie dynamique des ingrédients disponibles.
+* **Recommandation Intelligente :** Algorithmes entraînés sur des datasets **Kaggle** et **Zenodo**.
+* **Eco-Score :** Estimation de l’empreinte carbone affichée sur chaque fiche recette.
+* **Parcours Utilisateur Complet :** * Tutoriel vidéo en page d'accueil.
+    * Recherche multi-critères (origine, salé/sucré, ustensiles).
+    * Système de favoris et listes personnalisées.
+    * Historique des dernières actions pour une reprise rapide.
+
+---
+
+## 🛠️ Stack Technique & Architecture
+* **Frontend :** `Flutter` (Thème **Vert Kaki 🌿** pour une identité visuelle forte).
+* **Backend :** `ExpressJS`.
+* **Base de Données :** `Sqflite` avec une structure **dénormalisée** (optimisation des performances de lecture).
+* **Machine Learning :** Algorithmes implémentés nativement en `Dart`.
+* **Versioning :** Workflow `Git / GitHub`.
+
+---
+
+## 📊 Modélisation & Structure
+### Modélisation UML
+* **Cas d’utilisation :** Saisie, filtrage, gestion des favoris.
+* **Diagramme de classe :** Architecture centrée sur les entités `Utilisateur`, `Recette`, `Ingrédient`, `Favori`.
+* **Diagramme de séquence :** Focus sur le flux de recommandation et l'enregistrement des données.
+
+### Sources de données
+* **Dataset principal :** [Zenodo Records 15169428](https://zenodo.org/records/15169428).
+* **Datasets complémentaires :** Intégration de données Kaggle pour les valeurs nutritionnelles et carbones.
+
+---
+
+## 📈 Analyse Critique
+### ✅ Atouts
+* Impact environnemental concret et mesurable.
+* Interface intuitive (UX fluide).
+* Grande scalabilité (possibilité d'ajouter de nouvelles sources de données).
+
+### ⚠️ Défis & Inconvénients
+* Complexité de gestion des ingrédients ambigus (homonymes).
+* Optimisation continue du modèle de recommandation vectoriel.
+* Maintien de l'engagement utilisateur sur le long terme.
+
+---
+
+## 📄 Licence
+Ce projet est distribué sous licence **MIT**. Voir le fichier `LICENSE` pour plus d'informations.
